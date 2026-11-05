@@ -43,7 +43,7 @@ with tab_manga:
     escena_manga = st.text_input("Indica a Hércules la escena a convertir en Manga:", "El despertar del soberano en las ruinas")
     if st.button("✏️ Ordenar a Hércules Dibujar Plancha"):
         st.session_state.colmena_buffer.hercules_modo_mangaka(escena_manga)
-        st.success("¡Página generada y guardada en el visor!")
+        .success("¡Página generada y guardada en el visor!")
 
     st.markdown("---")
     st.markdown("### 📚 Planchas Actuales del Manga")
