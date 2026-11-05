@@ -57,7 +57,7 @@ with tab_manga:
     if st.button("🖌️ Ordenar a Hércules Dibujar Plancha"):
         with st.spinner("Hércules está dibujando la página..."):
             st.session_state.colmena_buffer.hercules_modo_mangaka(escena_manga)
-        .success("¡Página generada y guardada en el visor!")
+        st.success("¡Página generada y guardada en el visor!")
 
     st.markdown("---")
     st.markdown("### 📚 Planchas Actuales del Manga")
