@@ -1,5 +1,5 @@
 import streamlit as st
-from motor_diario import ColmenaBuffer
+from motor_diario import ColmenaBufferInfinito
 
 # Configuración de la página
 st.set_page_config(
