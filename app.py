@@ -10,7 +10,7 @@ st.set_page_config(
 
 # Inicializar el estado de la sesión para el motor diario y la colmena
 if "colmena_buffer" not in st.session_state:
-    st.session_state.colmena_buffer = ColmenaBuffer()
+    st.session_state.colmena_buffer = ColmenaBufferInfinito()
 
 st.title("👑 Centro de Mando 24/7 - Saga: Los Cinco Reinos")
 st.markdown("---")
