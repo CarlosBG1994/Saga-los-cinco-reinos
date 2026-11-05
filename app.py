@@ -1,5 +1,5 @@
 import streamlit as st
-from motor_diario import ColmenaBufferInfinito, HermesVulcanoPostPublicacion
+from motor_diario import ColmenaBufferInfinito
 
 # Configuración de la página
 st.set_page_config(
@@ -8,38 +8,43 @@ st.set_page_config(
     layout="wide"
 )
 
-# Inicializar el estado de la sesión conectado al motor diario y persistencia
+# Recarga automática de la página cada 15 segundos para ver el trabajo en vivo de los agentes
+st.markdown(
+    """
+    <meta http-equiv="refresh" content="15">
+    """,
+    unsafe_allow_html=True
+)
+
+# Inicializar la colmena en el estado de la sesión
 if "colmena_buffer" not in st.session_state:
     st.session_state.colmena_buffer = ColmenaBufferInfinito()
 
-if "hermes_vulcano" not in st.session_state:
-    st.session_state.hermes_vulcano = HermesVulcanoPostPublicacion()
-
 colmena = st.session_state.colmena_buffer
-hermes = st.session_state.hermes_vulcano
 
-# Título Principal
 st.title("👑 Centro de Mando 24/7 - Saga: Los Cinco Reinos")
+st.info("🔄 *El sistema se actualiza automáticamente cada 15 segundos para mostrar el trabajo en segundo plano de los agentes.*")
 
-# Pestañas de navegación de la aplicación
-tab_redes, tab_manga, tab_produccion, tab_agentes, tab_config = st.tabs([
+# Pestañas principales de navegación
+tab_redes, tab_manga, tab_capitulos, tab_agentes, tab_config = st.tabs([
     "📢 Redes Sociales", 
-    "🎨 Visor y Mangaka (Hércules)", 
-    "⚡ Motor de Producción (Aura)", 
-    "🐝 Colmena y Métricas", 
+    "🎨 Visor de Manga (Hércules)", 
+    "📖 Los 25 Capítulos", 
+    "🐝 Colmena y Estado en Vivo", 
     "⚙️ Configuración"
 ])
 
 # --- PESTAÑA 1: REDES SOCIALES ---
 with tab_redes:
-    st.header("Gestión y Automatización de Redes Sociales")
-    st.write("Administra el contenido programado generado por la colmena para difundir la saga.")
+    st.header("Gestión y Automatización de Redes Sociales (Aura & Cronos)")
+    st.write("Administra el contenido programado de forma autónoma por la colmena para difundir la saga.")
     
     banco = getattr(colmena, "banco_contenido_semanal", [])
     
     if banco:
-        for idx, item in enumerate(banco):
-            st.markdown(f"**Item #{item.get('id', idx+1)}** — *{item.get('timestamp', '')}*")
+        for item in reversed(banco):
+            item_id = item.get('id', 1)
+            st.markdown(f"**Item #{item_id}** — *{item.get('timestamp', '')}*")
             st.write(f"**Texto:** {item.get('texto', '')}")
             st.write(f"**Copy Comercial:** {item.get('copy_comercial', '')}")
             st.write(f"**Hashtags:** {item.get('hashtags', '')}")
@@ -48,44 +53,30 @@ with tab_redes:
             st.write(f"Estado actual: `{estado}`")
             
             if "Pendiente" in estado:
-                if st.button(f"🚀 Aprobar y Enviar a Redes #{item.get('id', idx+1)}", key=f"btn_redes_{idx}"):
+                if st.button(f"🚀 Aprobar y Enviar a Redes #{item_id}", key=f"btn_redes_{item_id}"):
                     item['estado'] = "Aprobado y Publicado"
                     colmena.sincronizar()
-                    st.success(f"¡Item #{item.get('id', idx+1)} aprobado y difundido con éxito!")
+                    st.success(f"¡Item #{item_id} aprobado y difundido con éxito!")
                     st.rerun()
             st.divider()
     else:
-        st.info("No hay elementos pendientes en el banco de contenido. Usa la pestaña 'Motor de Producción' para ordenar a Aura crear nuevos fragmentos.")
+        st.warning("Esperando a que Aura genere contenido automáticamente en el buffer...")
 
-# --- PESTAÑA 2: VISOR Y MANGAKA (HÉRCULES) ---
+# --- PESTAÑA 2: VISOR DE MANGA (HÉRCULES) ---
 with tab_manga:
-    st.header("🎨 Visor y Estudiador de Planchas de Manga")
-    st.write("Ordena a Hércules generar nuevas planchas visuales y revisa las páginas con sus respectivas correcciones.")
-    
-    # Formulario para ordenar una nueva plancha a Hércules
-    with st.form("form_hercules"):
-        st.subheader("✏️ Ordenar nueva plancha a Hércules")
-        escena_input = st.text_input("Describe la escena para convertirla en plancha de manga:", "Hugo cayendo en sueño hacia las ruinas ancestrales...")
-        btn_dibujar = st.form_submit_button("🎨 Ordenar a Hércules Dibujar Plancha")
-        
-        if btn_dibujar and escena_input:
-            with st.spinner("Hércules está procesando los trazos y generando el arte..."):
-                nueva_pag = colmena.hercules_modo_mangaka(escena_input)
-                st.success(f"¡Plancha #{nueva_pag['pag_id']} generada y guardada con éxito!")
-                st.rerun()
-
-    st.markdown("---")
-    st.subheader("📖 Planchas Registradas en el Sistema")
+    st.header("🎨 Visor y Estudiador de Planchas de Manga (Hércules)")
+    st.write("Revisa las planchas e ilustraciones generadas automáticamente por Hércules y déjale notas de corrección.")
     
     paginas = getattr(colmena, "paginas_manga", [])
+    
     if paginas:
         for pag in reversed(paginas):
             pag_id = pag["pag_id"]
-            st.markdown(f"### Página #{pag_id} — Escena: *{pag['escena']}*")
+            st.markdown(f"### Plancha #{pag_id} — Escena: *{pag.get('escena', '')}*")
             
             col_img, col_det = st.columns([1, 1])
             with col_img:
-                # Muestra la imagen dinámica única correspondiente a esta página
+                # Muestra la imagen generada automáticamente
                 st.image(
                     pag.get("imagen_url", "https://picsum.photos/600/400"), 
                     caption=f"Plancha Oficial - Página #{pag_id}",
@@ -103,67 +94,71 @@ with tab_manga:
                 
                 # Input para añadir nueva nota a esta página específica
                 nota_key = f"nota_input_{pag_id}"
-                nota_texto = st.text_input(f"Añadir corrección para la Página #{pag_id}:", key=nota_key)
-                if st.button(f"💾 Guardar Nota en Página #{pag_id}", key=f"btn_nota_{pag_id}"):
+                nota_texto = st.text_input(f"Añadir corrección para la Plancha #{pag_id}:", key=nota_key)
+                if st.button(f"💾 Guardar Nota en Plancha #{pag_id}", key=f"btn_nota_{pag_id}"):
                     if nota_texto:
                         colmena.guardar_correccion_manga(pag_id, nota_texto)
                         st.success("¡Nota de corrección guardada para siempre!")
                         st.rerun()
             st.divider()
     else:
-        st.info("Todavía no hay planchas de manga creadas. Usa el formulario superior para que Hércules empiece a dibujar.")
+        st.warning("Hércules está preparando las planchas visuales en segundo plano...")
 
-# --- PESTAÑA 3: MOTOR DE PRODUCCIÓN (AURA) ---
-with tab_produccion:
-    st.header("⚡ Motor de Producción Continua (Aura)")
-    st.write("Indica instrucciones a Aura para que redacte contenido, analice lore y alimente el banco automáticamente.")
+# --- PESTAÑA 3: LOS 25 CAPÍTULOS DE LA SAGA ---
+with tab_capitulos:
+    st.header("📖 Explorador de los 25 Capítulos de la Saga")
+    st.write("Consulta la estructura, lore y metadatos oficiales de los 25 capítulos que componen la obra.")
     
-    with st.form("form_aura"):
-        instruccion = st.text_area("Instrucción o directriz para Aura:", "Redacta el extracto inicial del encuentro en el reino prohibido...")
-        btn_aura = st.form_submit_button("🧠 Ordenar a Aura Redactar y Enviar al Banco")
-        
-        if btn_aura and instruccion:
-            with st.spinner("Aura está redactando y procesando el contenido..."):
-                colmena.ciclo_produccion_continua(instruccion)
-                st.success("¡Contenido redactado por Aura y añadido al banco con éxito!")
-                st.rerun()
+    # Selector de capítulos del 1 al 25
+    num_cap = st.selectbox(
+        "Selecciona el Capítulo a consultar:",
+        options=list(range(1, 26)),
+        format_func=lambda x: f"Capítulo {x} de 25"
+    )
+    
+    info_cap = colmena.obtener_capitulo(num_cap)
+    
+    st.markdown(f"### 👑 {info_cap['titulo']}")
+    st.markdown(f"**Escena Principal:** *{info_cap['escena']}*")
+    st.info(info_cap["descripcion"])
+    st.markdown(f"**Estado del Arte:** `{info_cap['plancha_generada']}`")
 
-# --- PESTAÑA 4: COLMENA Y MÉTRICAS ---
+# --- PESTAÑA 4: COLMENA Y ESTADO EN VIVO ---
 with tab_agentes:
-    st.header("🐝 Estado en Vivo de la Colmena y Métricas Post-Publicación")
+    st.header("🐝 Estado en Vivo de la Colmena Autónoma")
+    st.write("Supervisa el rendimiento y las tareas ejecutadas en segundo plano por los agentes.")
     
     col_a, col_b, col_c = st.columns(3)
     
     with col_a:
         st.markdown("### 🧠 Aura")
         st.markdown("**Rol:** Co-autora / Redacción")
-        st.info("Estado: **Activa**\n\nAnalizando capítulos y redactando fragmentos narrativos.")
+        st.info("Estado: **Activa 24/7**\n\nGenerando fragmentos narrativos y textos comerciales automáticamente.")
         
     with col_b:
         st.markdown("### 🎨 Hércules")
         st.markdown("**Rol:** Mangaka / Ilustrador")
-        st.success(f"Estado: **Operativo**\n\nPlanchas activas en sistema: `{len(colmena.paginas_manga)}`")
+        st.success(f"Estado: **Operativo 24/7**\n\nPlanchas activas en sistema: `{len(colmena.paginas_manga)}`")
         
     with col_c:
-        st.markdown("### 📊 Hermes & Vulcano")
-        st.markdown("**Rol:** Métricas y Comunidad")
-        st.warning("Estado: **Monitoreando**\n\nControlando flujos de datos y respuestas.")
+        st.markdown("### ⏳ Cronos")
+        st.markdown("**Rol:** Automatización / Redes")
+        st.warning("Estado: **Monitoreando**\n\nControlando colas de publicaciones y persistencia.")
 
     st.markdown("---")
-    st.subheader("📈 Panel de Métricas Actuales")
-    metricas = hermes.actualizar_metricas()
-    
+    st.subheader("📊 Métricas Generales del Sistema")
     m1, m2, m3 = st.columns(3)
-    m1.metric("Vistas Totales Estimadas", f"{metricas['vistas']:,}")
-    m2.metric("Clicks hacia Amazon / Letrame", f"{metricas['clicks_amazon']}")
-    m3.metric("Nivel de Engagement", metricas['engagement'])
+    m1.metric("Ítems de Contenido en Banco", len(colmena.banco_contenido_semanal))
+    m2.metric("Planchas de Manga Creadas", len(colmena.paginas_manga))
+    m3.metric("Capítulos Totales Indexados", "25 Capítulos")
 
 # --- PESTAÑA 5: CONFIGURACIÓN ---
 with tab_config:
     st.header("⚙️ Configuración del Sistema 24/7")
     st.json({
-        "Estado del Motor": "Activo con Persistencia JSON",
-        "Modo de Operación": "Cloud 24/7",
+        "Estado del Motor": "Activo con Persistencia en JSON",
+        "Modo de Operación": "Autónomo 24/7 (Hilos en Segundo Plano)",
         "Archivo de Datos": "datos_saga.json",
+        "Capítulos Totales": "25 Capítulos",
         "Motor Base": "motor_diario.py"
     })
