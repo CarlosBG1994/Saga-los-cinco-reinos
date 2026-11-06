@@ -13,7 +13,7 @@ if "colmena_buffer" not in st.session_state:
 colmena = st.session_state.colmena_buffer
 
 st.title("👑 Centro de Mando - Saga: Los Cinco Reinos")
-st.info("💡 *Modo Coherente Interactivo: Análisis de capítulos, buzón de dudas activo, atlas de lore, tokens y métricas.*")
+st.info("💡 *Modo Coherente Interactivo: Análisis de capítulos, buzón de dudas, atlas de lore y credenciales estructuradas.*")
 
 # Las 7 pestañas principales del Centro de Mando
 tab_capitulos, tab_lore, tab_asistencia, tab_redes, tab_manga, tab_wattpad, tab_config = st.tabs([
@@ -220,41 +220,81 @@ with tab_wattpad:
             st.success("¡Lore asimilado con éxito!")
             st.text_area("Resultado:", res, height=150)
 
-# --- PESTAÑA 7: CONFIGURACIÓN Y CREDENCIALES ---
+# --- PESTAÑA 7: CONFIGURACIÓN Y CREDENCIALES ESPECÍFICAS ---
 with tab_config:
-    st.header("⚙️ Configuración y Credenciales de Automatización")
-    st.write("Añade y gestiona tus claves de API y tokens para automatizar respuestas y publicaciones.")
+    st.header("⚙️ Configuración y Credenciales por Plataforma")
+    st.write("Introduce los campos específicos que te solicita cada plataforma para dejar configurada la automatización.")
     
-    with st.form("form_credenciales"):
-        st.subheader("🔑 Añadir / Actualizar Credenciales")
-        servicio = st.selectbox(
-            "Servicio o Plataforma:", 
-            ["Google AI Studio (Gemini API)", "Instagram / Meta Graph API", "TikTok API", "Wattpad API / Token", "Twitter (X) API"]
-        )
-        token_input = st.text_input("Introduce el Token o Clave API:", type="password")
-        
-        if st.form_submit_button("💾 Guardar Credencial de Forma Segura"):
-            if token_input:
-                colmena.guardar_credencial(servicio, token_input)
-                st.success(f"¡Credencial para '{servicio}' guardada correctamente!")
-                st.rerun()
-            else:
-                st.warning("Introduce un token o clave válida.")
+    servicio_elegido = st.selectbox(
+        "Selecciona la plataforma a configurar:",
+        ["TikTok API", "Instagram / Meta Graph API", "Twitter (X) API", "Google AI Studio (Gemini API)", "Wattpad API / Token"]
+    )
+    
+    st.markdown("---")
+    
+    # Formulario dinámico según la plataforma seleccionada
+    if servicio_elegido == "TikTok API":
+        with st.form("form_cred_tiktok"):
+            st.subheader("🔑 Credenciales de TikTok for Developers")
+            c_key = st.text_input("Client Key:", value="awno6fxfgoe4q4gw")
+            c_secret = st.text_input("Client Secret:", type="password")
+            
+            if st.form_submit_button("💾 Guardar Credenciales de TikTok"):
+                if c_key and c_secret:
+                    colmena.guardar_credencial_especifica("TikTok API", {"client_key": c_key, "client_secret": c_secret})
+                    st.success("¡Credenciales de TikTok guardadas correctamente!")
+                    st.rerun()
+                else:
+                    st.warning("Rellena ambos campos.")
+                    
+    elif servicio_elegido == "Instagram / Meta Graph API":
+        with st.form("form_cred_meta"):
+            st.subheader("🔑 Credenciales de Meta (Instagram Graph)")
+            app_id = st.text_input("Meta App ID:")
+            app_secret = st.text_input("Meta App Secret:", type="password")
+            access_token = st.text_input("Long-Lived Access Token:", type="password")
+            
+            if st.form_submit_button("💾 Guardar Credenciales de Meta"):
+                if app_id and access_token:
+                    colmena.guardar_credencial_especifica("Instagram / Meta Graph API", {"app_id": app_id, "app_secret": app_secret, "access_token": access_token})
+                    st.success("¡Credenciales de Meta/Instagram guardadas correctamente!")
+                    st.rerun()
+                else:
+                    st.warning("Rellena al menos el App ID y el Access Token.")
+                    
+    elif servicio_elegido == "Twitter (X) API":
+        with st.form("form_cred_twitter"):
+            st.subheader("🔑 Credenciales de Twitter / X Developer")
+            api_key = st.text_input("API Key (Consumer Key):")
+            api_secret = st.text_input("API Secret (Consumer Secret):", type="password")
+            bearer_token = st.text_input("Bearer Token:", type="password")
+            
+            if st.form_submit_button("💾 Guardar Credenciales de Twitter"):
+                if api_key and bearer_token:
+                    colmena.guardar_credencial_especifica("Twitter (X) API", {"api_key": api_key, "api_secret": api_secret, "bearer_token": bearer_token})
+                    st.success("¡Credenciales de Twitter guardadas correctamente!")
+                    st.rerun()
+                else:
+                    st.warning("Rellena los campos obligatorios.")
+                    
+    else:
+        with st.form("form_cred_general"):
+            st.subheader(f"🔑 Credencial para {servicio_elegido}")
+            token_unico = st.text_input("Introduce el Token o Clave API:", type="password")
+            
+            if st.form_submit_button(f"💾 Guardar Credencial de {servicio_elegido}"):
+                if token_unico:
+                    colmena.guardar_credencial_especifica(servicio_elegido, {"token": token_unico})
+                    st.success(f"¡Credencial para '{servicio_elegido}' guardada correctamente!")
+                    st.rerun()
+                else:
+                    st.warning("Introduce un valor válido.")
 
     st.markdown("---")
     st.subheader("🛡️ Estado Actual de las Credenciales Registradas")
     credenciales_guardadas = getattr(colmena, "credenciales", {})
     if credenciales_guardadas:
-        for serv, tok in credenciales_guardadas.items():
-            token_enmascarado = "•" * 8 + tok[-4:] if len(tok) > 4 else "••••••••"
-            st.markdown(f"* **{serv}**: `Configurado ({token_enmascarado})`")
+        for serv, info in credenciales_guardadas.items():
+            st.markdown(f"* **{serv}**: `Configurado y Guardado`")
     else:
-        st.info("No hay credenciales o tokens configurados todavía.")
-
-    st.markdown("---")
-    st.subheader("📊 Resumen General del Sistema")
-    st.json({
-        "Modo": "Agentes Activos, Interactivos y Coherentes",
-        "Capítulos Soportados": "Del 0 al 25 en la raíz",
-        "Servicios Conectados": list(credenciales_guardadas.keys()) if credenciales_guardadas else "Ninguno"
-    })
+        st.info("No hay credenciales configuradas todavía.")

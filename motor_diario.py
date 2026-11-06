@@ -226,8 +226,8 @@ class ColmenaBufferInfinito:
                 self.sincronizar()
                 break
 
-    def guardar_credencial(self, servicio, token):
-        self.credenciales[servicio] = token
+    def guardar_credencial_especifica(self, servicio, datos_dict):
+        self.credenciales[servicio] = datos_dict
         self.sincronizar()
 
     def actualizar_metricas_red(self, plataforma, seguidores, rendimiento_principal, interacciones):
