@@ -15,7 +15,20 @@ class GestorPersistencia:
                     return json.load(f)
             except Exception:
                 pass
-        return {"banco_contenido": [], "paginas_manga": [], "estado_agentes": "Control Manual", "lore_wattpad": "", "dudas_agentes": []}
+        return {
+            "banco_contenido": [], 
+            "paginas_manga": [], 
+            "estado_agentes": "Control Manual y Coherente", 
+            "lore_wattpad": "", 
+            "dudas_agentes": [],
+            "lore_universo": [],
+            "credenciales": {},
+            "metricas_redes": {
+                "Instagram": {"seguidores": 0, "rendimiento_principal": 0, "interacciones": 0, "ultima_actualizacion": "Pendiente"},
+                "TikTok": {"seguidores": 0, "rendimiento_principal": 0, "interacciones": 0, "ultima_actualizacion": "Pendiente"},
+                "Twitter (X)": {"seguidores": 0, "rendimiento_principal": 0, "interacciones": 0, "ultima_actualizacion": "Pendiente"}
+            }
+        }
 
     @staticmethod
     def guardar_datos(datos):
@@ -64,6 +77,9 @@ class ColmenaBufferInfinito:
         self.paginas_manga = datos.get("paginas_manga", [])
         self.lore_wattpad = datos.get("lore_wattpad", "")
         self.dudas_agentes = datos.get("dudas_agentes", [])
+        self.lore_universo = datos.get("lore_universo", [])
+        self.credenciales = datos.get("credenciales", {})
+        self.metricas_redes = datos.get("metricas_redes", {})
         self.estado_agentes = "Modo Asistido y Coherente"
 
     def sincronizar(self):
@@ -72,7 +88,10 @@ class ColmenaBufferInfinito:
             "paginas_manga": self.paginas_manga,
             "estado_agentes": self.estado_agentes,
             "lore_wattpad": self.lore_wattpad,
-            "dudas_agentes": self.dudas_agentes
+            "dudas_agentes": self.dudas_agentes,
+            "lore_universo": self.lore_universo,
+            "credenciales": self.credenciales,
+            "metricas_redes": self.metricas_redes
         })
 
     def asimilar_historia_wattpad(self, url):
@@ -107,6 +126,32 @@ class ColmenaBufferInfinito:
             "titulo": f"Capítulo {num}: Los Cinco Reinos",
             "descripcion": descripcion_texto
         }
+
+    def generar_dudas_automaticas_capitulo(self, num_cap, capitulo_texto):
+        existentes = [d for d in self.dudas_agentes if f"Capítulo {num_cap}" in d.get("pregunta", "")]
+        if existentes:
+            return
+
+        duda_aura = {
+            "id": len(self.dudas_agentes) + 1,
+            "agente": "Aura (Co-autora)",
+            "pregunta": f"[Capítulo {num_cap}] ¿Cuál debe ser el enfoque emocional principal de los personajes en esta escena y qué tono de tensión buscas?",
+            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M"),
+            "respondida": False,
+            "respuesta": ""
+        }
+        self.dudas_agentes.append(duda_aura)
+
+        duda_hercules = {
+            "id": len(self.dudas_agentes) + 2,
+            "agente": "Hércules (Mangaka)",
+            "pregunta": f"[Capítulo {num_cap}] ¿Qué elemento visual clave o escenario principal quieres que destaque obligatoriamente en la plancha de este capítulo?",
+            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M"),
+            "respondida": False,
+            "respuesta": ""
+        }
+        self.dudas_agentes.append(duda_hercules)
+        self.sincronizar()
 
     def generar_contenido_manual(self, instruccion, num_cap):
         info_cap = self.obtener_capitulo(num_cap)
@@ -148,6 +193,21 @@ class ColmenaBufferInfinito:
                 self.sincronizar()
                 break
 
+    def guardar_elemento_lore(self, categoria, nombre, descripcion):
+        nuevo_elemento = {
+            "id": len(self.lore_universo) + 1,
+            "categoria": categoria,
+            "nombre": nombre,
+            "descripcion": descripcion,
+            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M")
+        }
+        self.lore_universo.append(nuevo_elemento)
+        self.sincronizar()
+
+    def eliminar_elemento_lore(self, elemento_id):
+        self.lore_universo = [e for e in self.lore_universo if e["id"] != elemento_id]
+        self.sincronizar()
+
     def eliminar_item_banco(self, item_id):
         self.banco_contenido_semanal = [i for i in self.banco_contenido_semanal if i["id"] != item_id]
         self.sincronizar()
@@ -165,3 +225,16 @@ class ColmenaBufferInfinito:
                 })
                 self.sincronizar()
                 break
+
+    def guardar_credencial(self, servicio, token):
+        self.credenciales[servicio] = token
+        self.sincronizar()
+
+    def actualizar_metricas_red(self, plataforma, seguidores, rendimiento_principal, interacciones):
+        self.metricas_redes[plataforma] = {
+            "seguidores": seguidores,
+            "rendimiento_principal": rendimiento_principal,
+            "interacciones": interacciones,
+            "ultima_actualizacion": datetime.now().strftime("%Y-%m-%d %H:%M")
+        }
+        self.sincronizar()
