@@ -1,14 +1,12 @@
 import streamlit as st
 from motor_diario import ColmenaBufferInfinito
 
-# Configuración de la página
 st.set_page_config(
     page_title="Saga: Los Cinco Reinos - Centro de Mando 24/7",
     page_icon="👑",
     layout="wide"
 )
 
-# Recarga automática de la página cada 15 segundos para ver el trabajo en vivo de los agentes
 st.markdown(
     """
     <meta http-equiv="refresh" content="15">
@@ -16,7 +14,6 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# Inicializar la colmena en el estado de la sesión
 if "colmena_buffer" not in st.session_state:
     st.session_state.colmena_buffer = ColmenaBufferInfinito()
 
@@ -25,11 +22,12 @@ colmena = st.session_state.colmena_buffer
 st.title("👑 Centro de Mando 24/7 - Saga: Los Cinco Reinos")
 st.info("🔄 *El sistema se actualiza automáticamente cada 15 segundos para mostrar el trabajo en segundo plano de los agentes.*")
 
-# Pestañas principales de navegación
-tab_redes, tab_manga, tab_capitulos, tab_agentes, tab_config = st.tabs([
+# Pestañas principales (6 secciones completas)
+tab_redes, tab_manga, tab_capitulos, tab_wattpad, tab_agentes, tab_config = st.tabs([
     "📢 Redes Sociales", 
     "🎨 Visor de Manga (Hércules)", 
     "📖 Los 25 Capítulos", 
+    "🔗 Conexión Wattpad (Aura)",
     "🐝 Colmena y Estado en Vivo", 
     "⚙️ Configuración"
 ])
@@ -76,7 +74,6 @@ with tab_manga:
             
             col_img, col_det = st.columns([1, 1])
             with col_img:
-                # Muestra la imagen generada automáticamente
                 st.image(
                     pag.get("imagen_url", "https://picsum.photos/600/400"), 
                     caption=f"Plancha Oficial - Página #{pag_id}",
@@ -92,7 +89,6 @@ with tab_manga:
                 else:
                     st.write("_Sin correcciones registradas todavía._")
                 
-                # Input para añadir nueva nota a esta página específica
                 nota_key = f"nota_input_{pag_id}"
                 nota_texto = st.text_input(f"Añadir corrección para la Plancha #{pag_id}:", key=nota_key)
                 if st.button(f"💾 Guardar Nota en Plancha #{pag_id}", key=f"btn_nota_{pag_id}"):
@@ -104,26 +100,45 @@ with tab_manga:
     else:
         st.warning("Hércules está preparando las planchas visuales en segundo plano...")
 
-# --- PESTAÑA 3: LOS 25 CAPÍTULOS DE LA SAGA ---
+# --- PESTAÑA 3: LOS CAPÍTULOS ---
 with tab_capitulos:
-    st.header("📖 Explorador de los 25 Capítulos de la Saga")
-    st.write("Consulta la estructura, lore y metadatos oficiales de los 25 capítulos que componen la obra.")
+    st.header("📖 Explorador de Capítulos de la Saga")
+    st.write("Consulta el contenido de los capítulos subidos directamente en la raíz de tu repositorio (del 0 al 25).")
     
-    # Selector de capítulos del 1 al 25
     num_cap = st.selectbox(
         "Selecciona el Capítulo a consultar:",
-        options=list(range(1, 26)),
-        format_func=lambda x: f"Capítulo {x} de 25"
+        options=list(range(0, 26)),
+        format_func=lambda x: f"Capítulo {x}"
     )
     
     info_cap = colmena.obtener_capitulo(num_cap)
     
     st.markdown(f"### 👑 {info_cap['titulo']}")
     st.markdown(f"**Escena Principal:** *{info_cap['escena']}*")
-    st.info(info_cap["descripcion"])
+    st.text_area("Contenido del Capítulo:", info_cap["descripcion"], height=300)
     st.markdown(f"**Estado del Arte:** `{info_cap['plancha_generada']}`")
 
-# --- PESTAÑA 4: COLMENA Y ESTADO EN VIVO ---
+# --- PESTAÑA 4: CONEXIÓN WATTPAD (AURA) ---
+with tab_wattpad:
+    st.header("🔗 Conexión con Wattpad y Segunda Parte (Aura)")
+    st.write("Permite a Aura leer tus novelas desde Wattpad para asimilar el universo y ayudarte a escribir la segunda parte.")
+    
+    url_wattpad = st.text_input("Pega el enlace público de tu historia o capítulo en Wattpad:")
+    if st.button("🔗 Ordenar a Aura leer Wattpad y estructurar la 2ª Parte"):
+        if url_wattpad:
+            with st.spinner("Aura está accediendo a Wattpad y asimilando el universo de tu obra..."):
+                resultado = colmena.asimilar_historia_wattpad(url_wattpad)
+                st.success("¡Lore asimilado con éxito por Aura!")
+                st.text_area("Fragmento asimilado:", resultado, height=200)
+        else:
+            st.warning("Por favor, introduce una URL válida.")
+            
+    if getattr(colmena, "lore_wattpad", ""):
+        st.markdown("---")
+        st.subheader("📚 Lore Actual Asimilado de Wattpad")
+        st.text_area("Base de conocimiento activa:", colmena.lore_wattpad, height=150, disabled=True)
+
+# --- PESTAÑA 5: COLMENA Y ESTADO EN VIVO ---
 with tab_agentes:
     st.header("🐝 Estado en Vivo de la Colmena Autónoma")
     st.write("Supervisa el rendimiento y las tareas ejecutadas en segundo plano por los agentes.")
@@ -133,7 +148,7 @@ with tab_agentes:
     with col_a:
         st.markdown("### 🧠 Aura")
         st.markdown("**Rol:** Co-autora / Redacción")
-        st.info("Estado: **Activa 24/7**\n\nGenerando fragmentos narrativos y textos comerciales automáticamente.")
+        st.info("Estado: **Activa 24/7**\n\nGenerando fragmentos narrativos y procesando Wattpad.")
         
     with col_b:
         st.markdown("### 🎨 Hércules")
@@ -150,15 +165,15 @@ with tab_agentes:
     m1, m2, m3 = st.columns(3)
     m1.metric("Ítems de Contenido en Banco", len(colmena.banco_contenido_semanal))
     m2.metric("Planchas de Manga Creadas", len(colmena.paginas_manga))
-    m3.metric("Capítulos Totales Indexados", "25 Capítulos")
+    m3.metric("Capítulos Totales Indexados", "Del 0 al 25")
 
-# --- PESTAÑA 5: CONFIGURACIÓN ---
+# --- PESTAÑA 6: CONFIGURACIÓN ---
 with tab_config:
     st.header("⚙️ Configuración del Sistema 24/7")
     st.json({
         "Estado del Motor": "Activo con Persistencia en JSON",
         "Modo de Operación": "Autónomo 24/7 (Hilos en Segundo Plano)",
         "Archivo de Datos": "datos_saga.json",
-        "Capítulos Totales": "25 Capítulos",
+        "Capítulos Soportados": "Del 0 al 25 en la raíz",
         "Motor Base": "motor_diario.py"
     })
