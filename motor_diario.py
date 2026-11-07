@@ -13,25 +13,30 @@ class GestorPersistencia:
             "banco_contenido": [], 
             "paginas_manga": [], 
             "videos_tiktok": [],
-            "estilo_visual_seleccionado": "Burbujas de Recuerdos (Kingdom Hearts Style)",
+            "estilo_visual_seleccionado": "Estilo Propio: Fantasía Oscura y Narrativa Original",
             "scripts_personalizados": {
-                "prompt_kingdom_hearts": "anime key visual, cinematic illustration, a male protagonist floating backwards upside down in a dark deep blue void, surrounded by glowing translucent soap bubbles and glass spheres, inside each bubble there is a distinct memory scene: {escena}. High detail, Kingdom Hearts art style, digital painting, masterpiece.",
+                "prompt_arte": "original dark fantasy book illustration, cinematic lighting, rich atmosphere, professional concept art, high detail, depicting: {escena}",
                 "prompt_manga": "professional manga page, detailed ink line art, dark fantasy comic book panel, high contrast, screentones, epic composition based on: {escena}",
-                "prompt_video": "vertical 9:16 mobile wallpaper aspect ratio, cinematic mockup of a person reading a fantasy novel in a cozy room, {escena}"
+                "prompt_video": "vertical 9:16 cinematic mockup of a person reading a dark fantasy novel in a cozy ambient room, book pages turning, {escena}"
             },
-            "estado_agentes": "Agencia de Marketing y Co-autoría Activa", 
-            "lore_wattpad": "", 
+            "estado_agentes": "Agencia de Marketing Operativa", 
             "dudas_agentes": [],
             "lore_universo": [],
-            "credenciales": {},
+            "credenciales": {
+                "Google AI Studio": {"api_key_google": "AQ.Ab8RN6IYksoP9pU3mgI8Py0nXmvFawOefvAoGXYcCCLbv2sTAg"},
+                "TikTok API": {"client_key": "", "client_secret": "", "access_token": ""},
+                "Instagram / Meta Graph API": {"app_id": "", "app_secret": "", "page_token": ""},
+                "Twitter (X) API": {"api_key": "", "api_secret": "", "bearer_token": ""},
+                "Wattpad": {"wattpad_user": "", "wattpad_token": ""}
+            },
             "metricas_redes": {
                 "Instagram": {"seguidores": 1420, "rendimiento_principal": 84, "interacciones": 310, "ultima_actualizacion": "Hoy"},
                 "TikTok": {"seguidores": 2890, "rendimiento_principal": 92, "interacciones": 750, "ultima_actualizacion": "Hoy"},
                 "Twitter (X)": {"seguidores": 610, "rendimiento_principal": 65, "interacciones": 120, "ultima_actualizacion": "Hoy"}
             },
-            "config_temporizador": {"frecuencia": "Cada 6 horas", "activo": True, "ultima_ejecucion": "Nunca"},
+            "config_temporizador": {"frecuencia": "Cada 6 horas", "activo": True},
             "chat_colmena": [
-                {"origen": "Cronos (Director)", "mensaje": "Agencia de marketing en marcha. Todos los sistemas operativos listos para impulsar las ventas de la novela."}
+                {"origen": "Cronos (Director)", "mensaje": "Clave de Google Gemini integrada. Sistema de agencia de marketing y ventas a pleno rendimiento."}
             ],
             "propuestas_escritura": []
         }
@@ -60,10 +65,10 @@ class AuraCoAutora:
     def redactar_estrategia_multicanal(self, capitulo_texto, num_cap):
         extracto = capitulo_texto[:800] if capitulo_texto else "Escena clave de Los Cinco Reinos."
         return {
-            "feed": f"📖 [Campaña de Ventas — Capítulo {num_cap}]\n\n{extracto[:250]}...\n\n💡 Estrategia de conversión: Gancho emocional para captar lectores inmersivos.\n\n#LosCincoReinos #BookTokEspaña #FantasíaOscura #NovelaFantástica",
-            "tiktok_reel": f"🎬 [TikTok BookTok Comercial]\nVisual: El protagonista flotando en el abismo rodeado de burbujas con recuerdos del libro.\n\nTexto: '¿Y si el libro que tienes en las manos cobra vida?'\n\n\"{extracto[:200]}...\"",
-            "historia": f"⚡ [Story Interactiva] ¿Qué harías si despertaras en el Capítulo {num_cap}? Vota ahora.",
-            "estrategia_elegida": "Conversión y retención de lectores"
+            "feed": f"📖 [Campaña de Ventas — Capítulo {num_cap}]\n\n{extracto[:250]}...\n\n💡 Estrategia de conversión: Gancho literario para captar lectores fieles.\n\n#LosCincoReinos #BookTokEspaña #FantasíaOscura #NovelaFantástica",
+            "tiktok_reel": f"🎬 [TikTok BookTok Comercial]\nVisual: Lector sumergido en las páginas de Los Cinco Reinos con iluminación ambiental cálida.\n\nTexto: '¿Te atreves a descubrir los secretos de los Cinco Reinos?'\n\n\"{extracto[:200]}...\"",
+            "historia": f"⚡ [Story Interactiva] ¿Qué decisión tomarías en el Capítulo {num_cap}? Vota en la encuesta.",
+            "estrategia_elegida": "Retención y ventas directas"
         }
 
     def extraer_personajes_automaticamente(self, capitulo_texto, num_cap):
@@ -72,7 +77,7 @@ class AuraCoAutora:
         if "joven" in texto_lower or num_cap == 0:
             personajes.append({
                 "nombre": "Protagonista (Cap 0)",
-                "descripcion": "Joven de dieciséis años, cabello oscuro, ojos azul celeste, flotando en un estado de ingravidez y ensoñación."
+                "descripcion": "Joven de dieciséis años, cabello oscuro, ojos azul celeste, explorando un estado de misterio e ingravidez."
             })
         if "madre" in texto_lower or "niña" in texto_lower or num_cap == 1:
             personajes.append({
@@ -82,7 +87,7 @@ class AuraCoAutora:
         if not personajes:
             personajes.append({
                 "nombre": f"Personaje Principal (Cap {num_cap})",
-                "descripcion": "Entidad o figura destacada detectada en el capítulo."
+                "descripcion": "Figura destacada introducida en este capítulo."
             })
         return personajes
 
@@ -90,51 +95,47 @@ class AuraCoAutora:
         contexto_previo = ultimo_texto[:600] if ultimo_texto else "Inicio de la obra."
         return (
             f"👑 [Propuesta de Continuación y Corrección — Aura]\n\n"
-            f"Basado en tu avance ('{contexto_previo[:150]}...'), aquí tienes una estructura orientada a ventas y retención:\n\n"
+            f"Basado en tu avance ('{contexto_previo[:150]}...'), aquí tienes una estructura orientada a ventas y enganche rápido:\n\n"
             f"--- BORRADOR SUGERIDO ---\n"
-            f"La tensión en el ambiente era palpable. [Idea central: {idea_usuario}]. "
-            f"El lector necesita sentir el pulso de la escena desde la primera frase...\n"
+            f"El aire se tornó denso. [Idea central: {idea_usuario}]. "
+            f"El lector necesita percibir la amenaza inminente desde la primera línea...\n"
             f"--------------------------\n\n"
-            f"💡 **Consejo de Marketing:** Abre con un conflicto directo o una pregunta sin respuesta para enganchar en los primeros dos párrafos."
+            f"💡 **Consejo de Aura:** Abre con una frase contundente o una acción imprevista para elevar el interés comercial."
         )
 
 class HerculesMangaka:
     def construir_prompt_dinamico(self, estilo, extracto_capitulo, scripts_dict):
         clean_text = extracto_capitulo.replace("\n", " ")[:350]
-        if estilo == "Burbujas de Recuerdos (Kingdom Hearts Style)":
-            plantilla = scripts_dict.get("prompt_kingdom_hearts", "anime key visual, cinematic illustration, a male protagonist floating backwards upside down in a dark deep blue void, surrounded by glowing translucent soap bubbles and glass spheres, inside each bubble there is a distinct memory scene: {escena}. High detail, Kingdom Hearts art style, digital painting, masterpiece.")
-            return plantilla.replace("{escena}", clean_text)
-        elif estilo == "Manga Blanco y Negro Tradicional (Ink Lineart)":
-            plantilla = scripts_dict.get("prompt_manga", "professional manga page, detailed ink line art, dark fantasy comic book panel, high contrast, screentones, epic composition based on: {escena}")
-            return plantilla.replace("{escena}", clean_text)
-        else:
-            plantilla = scripts_dict.get("prompt_video", "vertical 9:16 mobile wallpaper aspect ratio, cinematic mockup of a person reading a fantasy novel in a cozy room, {escena}")
-            return plantilla.replace("{escena}", clean_text)
+        plantilla = scripts_dict.get("prompt_arte", "original dark fantasy book illustration, cinematic lighting, rich atmosphere, professional concept art, high detail, depicting: {escena}")
+        return plantilla.replace("{escena}", clean_text)
 
-    def generar_boceto_personaje(self, nombre_pj, descripcion_aura, estilo, scripts_dict):
+    def generar_boceto_personaje(self, nombre_pj, descripcion_aura, estilo, scripts_dict, api_key_gemini=""):
         prompt_base = self.construir_prompt_dinamico(estilo, f"Character design sheet of {nombre_pj}. {descripcion_aura}", scripts_dict)
-        return f"https://image.pollinations.ai/prompt/{requests.utils.quote(prompt_base)}?width=800&height=800&nologo=true"
+        prompt_encoded = requests.utils.quote(prompt_base)
+        return f"https://image.pollinations.ai/prompt/{prompt_encoded}?width=800&height=800&nologo=true"
 
-    def estructurar_pagina_manga_fiel(self, num_cap, capitulo_texto, estilo, scripts_dict):
+    def estructurar_pagina_manga_fiel(self, num_cap, capitulo_texto, estilo, scripts_dict, api_key_gemini=""):
         prompt_base = self.construir_prompt_dinamico(estilo, capitulo_texto, scripts_dict)
+        prompt_encoded = requests.utils.quote(prompt_base)
         return {
             "pag_id": num_cap,
             "estilo_usado": estilo,
-            "escena_resumen": f"Composición visual de marketing para el Capítulo {num_cap}.",
-            "guion_viñetas": f"Ilustración comercial de alto impacto.",
-            "imagen_url": f"https://image.pollinations.ai/prompt/{requests.utils.quote(prompt_base)}?width=900&height=1200&nologo=true",
-            "estado": "Imagen Comercial Generada"
+            "escena_resumen": f"Ilustración conceptual de marketing para el Capítulo {num_cap}.",
+            "guion_viñetas": f"Arte conceptual fiel al tono de la novela.",
+            "imagen_url": f"https://image.pollinations.ai/prompt/{prompt_encoded}?width=900&height=1200&nologo=true",
+            "estado": "Generado con Estilo Propietario"
         }
 
-    def generar_video_atractivo_tiktok(self, num_cap, capitulo_texto, nuevo_id, estilo, scripts_dict):
+    def generar_video_atractivo_tiktok(self, num_cap, capitulo_texto, nuevo_id, estilo, scripts_dict, api_key_gemini=""):
         prompt_base = self.construir_prompt_dinamico(estilo, capitulo_texto, scripts_dict)
+        prompt_encoded = requests.utils.quote(f"vertical 9:16 mobile wallpaper aspect ratio, {prompt_base}")
         return {
             "id": nuevo_id,
             "tipo": "Vídeo BookTok (9:16)",
             "capitulo": num_cap,
-            "preview_url": f"https://image.pollinations.ai/prompt/{requests.utils.quote('vertical 9:16 mobile wallpaper aspect ratio, ' + prompt_base)}?width=720&height=1280&nologo=true",
-            "guion_voz": f"Locución magnética para TikTok: 'Descubre los secretos del Capítulo {num_cap} de Los Cinco Reinos...'",
-            "estado": "Listo para campaña"
+            "preview_url": f"https://image.pollinations.ai/prompt/{prompt_encoded}?width=720&height=1280&nologo=true",
+            "guion_voz": f"Locución comercial: 'Adéntrate en el Capítulo {num_cap} de Los Cinco Reinos...'",
+            "estado": "Listo para publicar"
         }
 
 class ColmenaBufferInfinito:
@@ -145,11 +146,11 @@ class ColmenaBufferInfinito:
         self.banco_contenido = datos.get("banco_contenido", [])
         self.paginas_manga = datos.get("paginas_manga", [])
         self.videos_tiktok = datos.get("videos_tiktok", [])
-        self.estilo_visual_seleccionado = datos.get("estilo_visual_seleccionado", "Burbujas de Recuerdos (Kingdom Hearts Style)")
+        self.estilo_visual_seleccionado = datos.get("estilo_visual_seleccionado", "Estilo Propio: Fantasía Oscura y Narrativa Original")
         self.scripts_personalizados = datos.get("scripts_personalizados", {
-            "prompt_kingdom_hearts": "anime key visual, cinematic illustration, a male protagonist floating backwards upside down in a dark deep blue void, surrounded by glowing translucent soap bubbles and glass spheres, inside each bubble there is a distinct memory scene: {escena}. High detail, Kingdom Hearts art style, digital painting, masterpiece.",
+            "prompt_arte": "original dark fantasy book illustration, cinematic lighting, rich atmosphere, professional concept art, high detail, depicting: {escena}",
             "prompt_manga": "professional manga page, detailed ink line art, dark fantasy comic book panel, high contrast, screentones, epic composition based on: {escena}",
-            "prompt_video": "vertical 9:16 mobile wallpaper aspect ratio, cinematic mockup of a person reading a fantasy novel in a cozy room, {escena}"
+            "prompt_video": "vertical 9:16 cinematic mockup of a person reading a dark fantasy novel in a cozy ambient room, book pages turning, {escena}"
         })
         self.dudas_agentes = datos.get("dudas_agentes", [])
         self.lore_universo = datos.get("lore_universo", [])
@@ -177,6 +178,9 @@ class ColmenaBufferInfinito:
             "propuestas_escritura": self.propuestas_escritura
         })
 
+    def obtener_api_key_gemini(self):
+        return self.credenciales.get("Google AI Studio", {}).get("api_key_google", "")
+
     def generar_ayuda_continuacion(self, idea_usuario, num_cap_referencia):
         info_cap = self.obtener_capitulo(num_cap_referencia)
         propuesta = self.aura.coautor_continuidad_capitulo(idea_usuario, info_cap["descripcion"])
@@ -199,10 +203,11 @@ class ColmenaBufferInfinito:
         self.sincronizar()
 
     def ciclo_autonomo_marketing_inteligente(self, num_cap, capitulo_texto):
+        gemini_key = self.obtener_api_key_gemini()
         pjs_detectados = self.aura.extraer_personajes_automaticamente(capitulo_texto, num_cap)
         for pj in pjs_detectados:
             if not any(p["nombre"] == pj["nombre"] for p in self.lore_universo):
-                boceto = self.hercules.generar_boceto_personaje(pj["nombre"], pj["descripcion"], self.estilo_visual_seleccionado, self.scripts_personalizados)
+                boceto = self.hercules.generar_boceto_personaje(pj["nombre"], pj["descripcion"], self.estilo_visual_seleccionado, self.scripts_personalizados, gemini_key)
                 self.lore_universo.append({
                     "id": len(self.lore_universo) + 1,
                     "categoria": "Personaje",
@@ -213,20 +218,20 @@ class ColmenaBufferInfinito:
                 })
 
         if not any(p["pag_id"] == num_cap for p in self.paginas_manga) and len(capitulo_texto) > 50:
-            nueva_pag = self.hercules.estructurar_pagina_manga_fiel(num_cap, capitulo_texto, self.estilo_visual_seleccionado, self.scripts_personalizados)
+            nueva_pag = self.hercules.estructurar_pagina_manga_fiel(num_cap, capitulo_texto, self.estilo_visual_seleccionado, self.scripts_personalizados, gemini_key)
             self.paginas_manga.append(nueva_pag)
 
         if not any(b.get("cap_asociado") == num_cap for b in self.banco_contenido) and len(capitulo_texto) > 50:
             copys = self.aura.redactar_estrategia_multicanal(capitulo_texto, num_cap)
             nuevo_vid_id = len(self.videos_tiktok) + 1
-            video_rec = self.hercules.generar_video_atractivo_tiktok(num_cap, capitulo_texto, nuevo_vid_id, self.estilo_visual_seleccionado, self.scripts_personalizados)
+            video_rec = self.hercules.generar_video_atractivo_tiktok(num_cap, capitulo_texto, nuevo_vid_id, self.estilo_visual_seleccionado, self.scripts_personalizados, gemini_key)
             self.videos_tiktok.append(video_rec)
             self.banco_contenido.append({
                 "id": len(self.banco_contenido) + 1,
                 "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M"),
                 "cap_asociado": num_cap,
                 "copys": copys,
-                "estado": "Campaña de Ventas Lista"
+                "estado": "Campaña Comercial Lista"
             })
         self.sincronizar()
 
@@ -247,19 +252,7 @@ class ColmenaBufferInfinito:
         elif accion == "publicar":
             for i in self.banco_contenido:
                 if i["id"] == item_id:
-                    i["estado"] = "🚀 Publicado en Redes con Éxito"
-        self.sincronizar()
-
-    def responder_duda(self, duda_id, respuesta):
-        for d in self.dudas_agentes:
-            if d["id"] == duda_id:
-                d["respuesta"] = respuesta
-                d["respondida"] = True
-                self.sincronizar()
-                break
-
-    def enviar_mensaje_chat(self, emisor, texto):
-        self.chat_colmena.append({"origen": emisor, "mensaje": texto})
+                    i["estado"] = "🚀 Publicado con Éxito"
         self.sincronizar()
 
     def eliminar_pagina_manga(self, pag_id):
@@ -274,6 +267,6 @@ class ColmenaBufferInfinito:
         self.credenciales[servicio] = datos
         self.sincronizar()
 
-    def guardar_config_temporizador(self, frecuencia, activo):
-        self.config_temporizador = {"frecuencia": frecuencia, "activo": activo, "ultima_ejecucion": datetime.now().strftime("%Y-%m-%d %H:%M")}
+    def enviar_mensaje_chat(self, emisor, texto):
+        self.chat_colmena.append({"origen": emisor, "mensaje": texto})
         self.sincronizar()
