@@ -19,7 +19,7 @@ class GestorPersistencia:
             "banco_contenido": [], 
             "paginas_manga": [], 
             "videos_tiktok": [],
-            "estado_agentes": "Modo Mangaka y Coherencia Avanzada", 
+            "estado_agentes": "Autodidactas y Proactivos", 
             "lore_wattpad": "", 
             "dudas_agentes": [],
             "lore_universo": [],
@@ -55,20 +55,18 @@ class AuraCoAutora:
     def redactar_estrategia_multicanal(self, instruccion_usuario, capitulo_texto):
         extracto = capitulo_texto[:1200] if capitulo_texto else "Sin capítulo."
         return {
-            "feed": f"[Publicación Feed / Carrusel]\n{extracto[:300]}...\n\n👉 Adéntrate en Los Cinco Reinos.\n#LosCincoReinos #DarkFantasy #MangaArt #BookTok",
+            "feed": f"[Publicación Feed Proactiva]\n{extracto[:300]}...\n\n👉 Adéntrate en Los Cinco Reinos.\n#LosCincoReinos #DarkFantasy #MangaArt #BookTok",
             "tiktok_reel": f"[Vídeo / Reel / TikTok]\n(Escena inmersiva):\n\"Imagina estar leyendo un libro y de repente vivir la escena...\"\n\n{extracto[:250]}...\n\n#BookTokEspaña #FantasíaOscura #WritingCommunity",
-            "historia": f"[Historia / Story]\n⚡ Nuevo capítulo adaptado al manga. ¡Descúbrelo!",
+            "historia": f"[Historia / Story]\n⚡ Análisis automático completado. ¡Descubre el nuevo avance!",
             "instruccion_base": instruccion_usuario
         }
 
     def describir_personaje_detallado(self, nombre_pj, contexto_obra):
-        # Aura genera una descripción visual hiper-precisa para que Hércules dibuje el boceto
         prompt_visual = f"detailed character design sheet of {nombre_pj}, dark fantasy aesthetic, manga style line art, expressive face, detailed clothing, concept art, monochrome with ink details, {contexto_obra[:400]}"
         return prompt_visual
 
 class HerculesMangaka:
     def generar_boceto_personaje(self, nombre_pj, descripcion_aura):
-        # Hércules genera el boceto visual del personaje en estilo dibujo/manga
         prompt_encoded = requests.utils.quote(f"character concept sketch, manga style, {descripcion_aura}")
         imagen_url = f"https://image.pollinations.ai/prompt/{prompt_encoded}?width=600&height=800&nologo=true"
         return imagen_url
@@ -76,7 +74,6 @@ class HerculesMangaka:
     def estructurar_pagina_manga_avanzada(self, num_cap, capitulo_texto, estilo_narrativo=""):
         extracto = capitulo_texto[:400] if capitulo_texto else "Trama del capítulo."
         
-        # Hércules decide de forma inteligente si incluye la metáfora visual (ej. lector en biblioteca + pensamiento)
         if "biblioteca" in estilo_narrativo.lower() or num_cap % 2 == 0:
             escena_desc = "Viñeta 1: Un lector en una atmósfera silenciosa de una biblioteca antigua. Viñeta 2: Transición visual donde el fondo se desvanece en un pensamiento con la escena del libro en acción."
             prompt_manga = f"manga page layout, split panel, a reader in an antique library transitioning into an epic fantasy battle thought bubble, detailed ink lines, black and white comic book style, {extracto}"
@@ -90,24 +87,24 @@ class HerculesMangaka:
         return {
             "pag_id": num_cap,
             "escena_resumen": escena_desc,
-            "guion_viñetas": f"Guion técnico de Hércules para Cap {num_cap}: {extracto[:200]}...",
+            "guion_viñetas": f"Guion técnico autónomo de Hércules para Cap {num_cap}: {extracto[:200]}...",
             "imagen_url": pagina_url,
-            "estado": "Borrador de Manga Generado"
+            "estado": "Borrador de Manga Generado de forma Autónoma"
         }
 
-    def generar_video_vertical_profesional(self, num_cap, capitulo_texto):
+    def generar_video_vertical_profesional(self, num_cap, capitulo_texto, nuevo_id=1):
         extracto = capitulo_texto[:300] if capitulo_texto else "Trama impactante."
         prompt_vid = f"vertical 9:16 mobile video frame, dark fantasy anime aesthetic, intense dramatic lighting, motion blur, {extracto}"
         prompt_encoded = requests.utils.quote(prompt_vid)
         video_preview = f"https://image.pollinations.ai/prompt/{prompt_encoded}?width=720&height=1280&nologo=true"
 
         return {
-            "id": num_cap,
+            "id": nuevo_id,
             "tipo": "Vídeo / Reel / TikTok (9:16)",
             "capitulo": num_cap,
             "preview_url": video_preview,
-            "guion_voz": f"Locución: '¿Y si el libro que lees cobra vida ante ti?' (Capítulo {num_cap}).",
-            "estado": "Pendiente"
+            "guion_voz": f"Locución autónoma: '¿Y si el libro que lees cobra vida ante ti?' (Capítulo {num_cap}).",
+            "estado": "Pendiente de tu revisión"
         }
 
 class ColmenaBufferInfinito:
@@ -123,7 +120,7 @@ class ColmenaBufferInfinito:
         self.lore_universo = datos.get("lore_universo", [])
         self.credenciales = datos.get("credenciales", {})
         self.metricas_redes = datos.get("metricas_redes", {})
-        self.estado_agentes = "Autónomo y Especializado en Manga"
+        self.estado_agentes = "Autodidactas y Proactivos"
 
     def sincronizar(self):
         GestorPersistencia.guardar_datos({
@@ -164,20 +161,37 @@ class ColmenaBufferInfinito:
         return {"titulo": f"Capítulo {num}: Los Cinco Reinos", "descripcion": desc}
 
     def procesar_autonomia_capitulo(self, num_cap, capitulo_texto):
+        # Aura y Hércules analizan de forma autodidacta y generan propuestas automáticamente si detectan texto nuevo
         existentes = [d for d in self.dudas_agentes if f"Capítulo {num_cap}" in d.get("pregunta", "")]
-        if not existentes and len(capitulo_texto) > 100:
+        if not existentes and len(capitulo_texto) > 150 and "pendiente" not in capitulo_texto.lower():
+            # Plantean duda proactiva al usuario
             self.dudas_agentes.append({
                 "id": len(self.dudas_agentes) + 1,
-                "agente": "Aura & Hércules",
-                "pregunta": f"[Capítulo {num_cap}] ¿Quieres que apliquemos la metáfora visual del lector en la biblioteca conectando con el pensamiento del libro en este capítulo?",
+                "agente": "Aura & Hércules (Autodidactas)",
+                "pregunta": f"[Capítulo {num_cap}] Hemos escaneado el capítulo de forma autónoma. ¿Consideras que debemos enfatizar más la atmósfera oscura o pasamos a generar los recursos de manga y redes con nuestro criterio?",
                 "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M"),
                 "respondida": False,
                 "respuesta": ""
             })
+            
+            # Generación autónoma preliminar de página de manga y paquete de redes
+            estilo_auto = "Especial: Lector en Biblioteca + Pensamiento con Escena del Libro"
+            pag_autonoma = self.hercules.estructurar_pagina_manga_avanzada(num_cap, capitulo_texto, estilo_auto)
+            if not any(p["pag_id"] == num_cap for p in self.paginas_manga):
+                self.paginas_manga.append(pag_autonoma)
+
+            copys_auto = self.aura.redactar_estrategia_multicanal("Análisis automático autónomo", capitulo_texto)
+            if not any(b.get("cap_asociado") == num_cap for b in self.banco_contenido):
+                self.banco_contenido.append({
+                    "id": len(self.banco_contenido) + 1,
+                    "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M"),
+                    "cap_asociado": num_cap,
+                    "copys": copys_auto,
+                    "estado": "Propuesta Autónoma Pendiente de Revisión"
+                })
         self.sincronizar()
 
     def guardar_personaje_con_boceto(self, nombre, descripcion):
-        # Aura describe y Hércules dibuja el boceto inicial del personaje
         prompt_visual = self.aura.describir_personaje_detallado(nombre, descripcion)
         boceto_url = self.hercules.generar_boceto_personaje(nombre, prompt_visual)
 
@@ -212,7 +226,9 @@ class ColmenaBufferInfinito:
         texto_cap = info["descripcion"]
 
         copys = self.aura.redactar_estrategia_multicanal(instruccion, texto_cap)
-        video_rec = self.hercules.generar_video_vertical_profesional(num_cap, texto_cap)
+        
+        nuevo_vid_id = len(self.videos_tiktok) + 1
+        video_rec = self.hercules.generar_video_vertical_profesional(num_cap, texto_cap, nuevo_vid_id)
         self.videos_tiktok.append(video_rec)
 
         self.banco_contenido.append({
@@ -250,7 +266,7 @@ class ColmenaBufferInfinito:
         self.sincronizar()
 
     def eliminar_video_tiktok(self, vid_id):
-        self.videos_tiktok = [v for v in self.videos_tiktok if v["id"] != vid_id]
+        self.videos_tiktok = [v for v in self.videos_tiktok if v.get("id") != vid_id]
         self.sincronizar()
 
     def guardar_credencial_especifica(self, servicio, datos):
