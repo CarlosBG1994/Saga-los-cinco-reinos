@@ -2,7 +2,7 @@ import streamlit as st
 from motor_diario import ColmenaBufferInfinito
 
 st.set_page_config(
-    page_title="Saga: Los Cinco Reinos - Centro de Mando",
+    page_title="Saga: Los Cinco Reinos - Centro Mangaka",
     page_icon="👑",
     layout="wide"
 )
@@ -12,289 +12,221 @@ if "colmena_buffer" not in st.session_state:
 
 colmena = st.session_state.colmena_buffer
 
-st.title("👑 Centro de Mando - Saga: Los Cinco Reinos")
-st.info("💡 *Modo Coherente Interactivo: Análisis de capítulos, buzón de dudas, atlas de lore y credenciales estructuradas.*")
+st.title("👑 Centro de Mando & Mangaka - Los Cinco Reinos")
+st.info("💡 *Gestión avanzada: Aura describe con precisión, Hércules diseña bocetos editables por personaje y estructura las páginas de manga (con opciones de biblioteca y pensamientos).*")
 
-# Las 7 pestañas principales del Centro de Mando
-tab_capitulos, tab_lore, tab_asistencia, tab_redes, tab_manga, tab_wattpad, tab_config = st.tabs([
+tab_capitulos, tab_bocetos, tab_manga, tab_asistencia, tab_redes, tab_videos, tab_wattpad, tab_config = st.tabs([
     "📖 Capítulos y Órdenes",
-    "🗺️ Personajes, Mapas y Bestiario",
-    "❓ Buzón de Dudas (Agentes Activos)",
-    "📢 Contenido y Redes",
-    "🎨 Visor de Manga",
+    "👥 Biblioteca de Personajes (Bocetos)",
+    "🎨 Estudio de Manga",
+    "❓ Buzón Inteligente",
+    "📢 Banco Multicanal (Aprobar / Borrar)",
+    "🎬 Vídeos (Reels / TikTok)",
     "🔗 Conexión Wattpad",
-    "⚙️ Configuración y Credenciales"
+    "⚙️ Configuración"
 ])
 
 # --- PESTAÑA 1: CAPÍTULOS Y ÓRDENES ---
 with tab_capitulos:
-    st.header("📖 Explorador de Capítulos y Activación de Agentes")
-    st.write("Selecciona un capítulo real de tu repositorio. Al seleccionarlo, Aura y Hércules lo leerán y te plantearán sus dudas en el buzón.")
-    
-    num_cap = st.selectbox(
-        "Selecciona el Capítulo:",
-        options=list(range(0, 26)),
-        format_func=lambda x: f"Capítulo {x}"
-    )
+    st.header("📖 Explorador de Capítulos y Automatización")
+    num_cap = st.selectbox("Selecciona el Capítulo:", options=list(range(0, 26)), format_func=lambda x: f"Capítulo {x}")
     
     info_cap = colmena.obtener_capitulo(num_cap)
     st.markdown(f"### 👑 {info_cap['titulo']}")
-    st.text_area("Contenido real detectado en la raíz:", info_cap["descripcion"], height=250)
+    st.text_area("Contenido real:", info_cap["descripcion"], height=200)
     
-    if info_cap["descripcion"] and "Aún no se ha encontrado" not in info_cap["descripcion"]:
-        colmena.generar_dudas_automaticas_capitulo(num_cap, info_cap["descripcion"])
+    if info_cap["descripcion"] and "pendiente" not in info_cap["descripcion"].lower():
+        colmena.procesar_autonomia_capitulo(num_cap, info_cap["descripcion"])
     
     st.markdown("---")
-    st.subheader("🛠️ Dar orden directa a los agentes sobre este capítulo:")
-    instruccion_user = st.text_input("¿Qué quieres que Aura redacte o continúe basándose en este capítulo?")
-    
-    col_btn1, col_btn2 = st.columns(2)
-    with col_btn1:
-        if st.button("✍️ Ordenar a Aura redactar texto coherente"):
-            if instruccion_user:
-                colmena.generar_contenido_manual(instruccion_user, num_cap)
-                st.success("¡Borrador generado y añadido a la pestaña de Contenido!")
-                st.rerun()
-            else:
-                st.warning("Escribe una directriz clara para Aura.")
-                
-    with col_btn2:
-        if st.button("🎨 Ordenar a Hércules crear plancha de este capítulo"):
-            colmena.generar_manga_manual(num_cap)
-            st.success("¡Plancha de manga estructurada y añadida al Visor!")
-            st.rerun()
+    st.subheader("🚀 Generar Paquete Multicanal para Redes:")
+    instruccion_user = st.text_area("Directrices adicionales para los copys y vídeos:")
+    if st.button("✨ Generar Contenido para Redes"):
+        colmena.generar_paquete_creativo_completo(instruccion_user, num_cap)
+        st.success("¡Contenido generado y enviado al Banco Multicanal!")
+        st.rerun()
 
-# --- PESTAÑA 2: PERSONAJES, MAPAS Y BESTIARIO ---
-with tab_lore:
-    st.header("🗺️ Atlas de la Saga: Personajes, Mapas y Bestiario")
-    st.write("Gestiona la base de datos oficial del universo de Los Cinco Reinos.")
+# --- PESTAÑA 2: BIBLIOTECA DE PERSONAJES Y BOCETOS ---
+with tab_bocetos:
+    st.header("👥 Biblioteca de Personajes y Bocetos Editables")
+    st.write("Aura define a los personajes con precisión milimétrica y Hércules genera un boceto visual inicial que puedes modificar las veces que quieras.")
     
-    with st.form("form_nuevo_lore"):
-        st.subheader("➕ Añadir nuevo elemento al Lore")
-        cat_lore = st.selectbox("Categoría:", ["Personaje", "Mapa / Lugar", "Bestiario"])
-        nombre_lore = st.text_input("Nombre:")
-        desc_lore = st.text_area("Descripción y trasfondo:")
-        
-        if st.form_submit_button("💾 Guardar en la Base de Datos"):
-            if nombre_lore and desc_lore:
-                colmena.guardar_elemento_lore(cat_lore, nombre_lore, desc_lore)
-                st.success(f"¡'{nombre_lore}' guardado con éxito!")
-                st.rerun()
-            else:
-                st.warning("Rellena el nombre y la descripción.")
-
-    st.markdown("---")
-    st.subheader("📚 Elementos Registrados")
-    lista_lore = getattr(colmena, "lore_universo", [])
-    if lista_lore:
-        filtro_cat = st.radio("Filtrar por categoría:", ["Todos", "Personaje", "Mapa / Lugar", "Bestiario"], horizontal=True)
-        for elem in reversed(lista_lore):
-            if filtro_cat == "Todos" or elem["categoria"] == filtro_cat:
-                elem_id = elem["id"]
-                st.markdown(f"### [{elem['categoria']}] {elem['nombre']}")
-                st.write(elem['descripcion'])
-                if st.button(f"🗑️ Eliminar '{elem['nombre']}'", key=f"del_lore_{elem_id}"):
-                    colmena.eliminar_elemento_lore(elem_id)
+    with st.expander("➕ Añadir nuevo Personaje a la Biblioteca"):
+        with st.form("form_nuevo_pj"):
+            nombre_pj = st.text_input("Nombre del Personaje:")
+            desc_pj = st.text_area("Rasgos físicos, vestimenta, expresiones y trasfondo:")
+            if st.form_submit_button("🎨 Generar Personaje y Boceto Inicial"):
+                if nombre_pj and desc_pj:
+                    colmena.guardar_personaje_con_boceto(nombre_pj, desc_pj)
+                    st.success(f"¡Personaje '{nombre_pj}' creado con su boceto inicial!")
                     st.rerun()
-                st.divider()
-    else:
-        st.info("Aún no hay elementos registrados.")
+                else:
+                    st.warning("Rellena todos los campos.")
 
-# --- PESTAÑA 3: BUZÓN DE DUDAS (AGENTES ACTIVOS) ---
-with tab_asistencia:
-    st.header("❓ Buzón de Dudas (Consultas Activas de los Agentes)")
-    st.write("Aquí verás las preguntas que Aura y Hércules te hacen al analizar tus capítulos para asegurarte de que trabajan exactamente como deseas.")
-    
-    nueva_duda = st.text_input("Plantear una duda o regla adicional a los agentes:")
-    agente_destino = st.selectbox("¿A qué agente va dirigida?", ["Aura (Co-autora)", "Hércules (Mangaka)"])
-    if st.button("Enviar consulta personalizada"):
-        if nueva_duda:
-            colmena.registrar_duda(nueva_duda, agente_destino)
-            st.success("¡Consulta registrada!")
-            st.rerun()
-            
     st.markdown("---")
-    st.subheader("📋 Preguntas pendientes de los Agentes")
-    dudas = getattr(colmena, "dudas_agentes", [])
-    if dudas:
-        for d in reversed(dudas):
-            estado_txt = "✅ **Respondida**" if d["respondida"] else "⚠️ **Requiere tu respuesta**"
-            st.markdown(f"**[{d['timestamp']}] {d['agente']}** — {estado_txt}")
-            st.info(f"💬 \"{d['pregunta']}\"")
-            
-            if d["respondida"]:
-                st.success(f"**Tu directriz activa:** {d['respuesta']}")
-            else:
-                resp_key = f"resp_{d['id']}"
-                resp_txt = st.text_input(f"Responder a {d['agente']}:", key=resp_key)
-                if st.button(f"Guardar respuesta #{d['id']}", key=f"btn_duda_{d['id']}"):
-                    if resp_txt:
-                        colmena.responder_duda(d['id'], resp_txt)
-                        st.success("¡Respuesta guardada! Los agentes aplicarán esta directriz.")
-                        st.rerun()
+    lista_lore = getattr(colmena, "lore_universo", [])
+    personajes = [p for p in lista_lore if p["categoria"] == "Personaje"]
+    
+    if personajes:
+        for p in reversed(personajes):
+            p_id = p["id"]
+            st.markdown(f"### 👤 {p['nombre']}")
+            col_b1, col_b2 = st.columns([1, 1])
+            with col_b1:
+                if p.get("boceto_url"):
+                    st.image(p["boceto_url"], caption=f"Boceto actual de {p['nombre']}", use_container_width=True)
+                else:
+                    st.info("Sin boceto generado.")
+            with col_b2:
+                st.write(f"**Descripción actual (Aura):**\n{p['descripcion']}")
+                
+                # Campo para modificar el boceto y redefinir al personaje
+                nueva_desc = st.text_area(f"Modificar rasgos de {p['nombre']}:", value=p['descripcion'], key=f"desc_pj_{p_id}")
+                if st.button(f"🔄 Actualizar y Redibujar Boceto de {p['nombre']}", key=f"btn_upd_{p_id}"):
+                    colmena.actualizar_boceto_personaje(p_id, nueva_desc)
+                    st.success("¡Boceto actualizado con éxito por Hércules!")
+                    st.rerun()
+                    
+                if st.button(f"🗑️ Eliminar Personaje '{p['nombre']}'", key=f"del_pj_{p_id}"):
+                    colmena.eliminar_elemento_lore(p_id)
+                    st.rerun()
             st.divider()
     else:
-        st.info("No hay dudas pendientes. Explora los capítulos en la primera pestaña para que los agentes comiencen a analizar.")
+        st.info("No hay personajes registrados en la biblioteca.")
 
-# --- PESTAÑA 4: CONTENIDO Y MÉTRICAS DE REDES ---
-with tab_redes:
-    st.header("📢 Contenido y Métricas de Redes Sociales")
-    st.write("Supervisa el contenido generado, aprueba publicaciones y registra las métricas de rendimiento de cada plataforma.")
-    
-    st.subheader("📊 Panel de Métricas por Red Social")
-    metricas_guardadas = getattr(colmena, "metricas_redes", {})
-    cols_met = st.columns(len(metricas_guardadas) if metricas_guardadas else 1)
-    
-    for idx, (plat, datos) in enumerate(metricas_guardadas.items()):
-        with cols_met[idx]:
-            st.markdown(f"### 📱 {plat}")
-            st.metric("Seguidores", datos.get("seguidores", 0))
-            st.metric("Rendimiento / Alcance", datos.get("rendimiento_principal", 0))
-            st.metric("Interacciones", datos.get("interacciones", 0))
-            st.caption(f"Actualizado: {datos.get('ultima_actualizacion', 'N/A')}")
-
-    st.markdown("---")
-    with st.expander("🔄 Actualizar Métricas Manualmente (o vía Token de API)"):
-        with st.form("form_act_metricas"):
-            plat_sel = st.selectbox("Plataforma a actualizar:", ["Instagram", "TikTok", "Twitter (X)"])
-            seg_input = st.number_input("Número de seguidores:", min_value=0, value=0)
-            rend_input = st.number_input("Alcance / Visualizaciones recientes:", min_value=0, value=0)
-            inter_input = st.number_input("Interacciones totales:", min_value=0, value=0)
-            
-            if st.form_submit_button("💾 Guardar y Sincronizar Métricas"):
-                colmena.actualizar_metricas_red(plat_sel, seg_input, rend_input, inter_input)
-                st.success(f"¡Métricas de {plat_sel} actualizadas con éxito!")
-                st.rerun()
-
-    st.markdown("---")
-    st.subheader("📝 Banco de Contenido Programado")
-    banco = getattr(colmena, "banco_contenido_semanal", [])
-    if banco:
-        for item in reversed(banco):
-            item_id = item.get('id', 1)
-            st.markdown(f"**Item #{item_id}** (Capítulo asociado: {item.get('cap_asociado', 'N/A')})")
-            st.text_area(f"Texto #{item_id}", item.get('texto', ''), height=100, key=f"txt_{item_id}")
-            if st.button(f"🗑️ Eliminar Item #{item_id}", key=f"del_item_{item_id}"):
-                colmena.eliminar_item_banco(item_id)
-                st.rerun()
-            st.divider()
-    else:
-        st.info("No hay contenido generado en este momento.")
-
-# --- PESTAÑA 5: VISOR DE MANGA ---
+# --- PESTAÑA 3: ESTUDIO DE MANGA ---
 with tab_manga:
-    st.header("🎨 Visor de Planchas de Manga")
+    st.header("🎨 Estudio de Manga (Adaptación de la Novela)")
+    st.write("Hércules diseña las páginas de manga basándose en los capítulos. Puedes elegir si quieres aplicar la metáfora visual del lector en la biblioteca y un pensamiento con la escena del libro.")
+    
+    with st.form("form_crear_manga"):
+        cap_manga_sel = st.selectbox("Seleccionar Capítulo para Adaptar:", options=list(range(0, 26)), format_func=lambda x: f"Capítulo {x}")
+        estilo_opcion = st.selectbox(
+            "Enfoque Narrativo y Visual de Hércules:",
+            [
+                "Estándar (Acción y Diálogo Fiel)",
+                "Especial: Lector en Biblioteca + Pensamiento con Escena del Libro",
+                "Clímax Dramático (Viñetas cinemáticas)"
+            ]
+        )
+        if st.form_submit_button("🖌️ Ordenar a Hércules Dibujar Página de Manga"):
+            colmena.generar_pagina_manga_capitulo(cap_manga_sel, estilo_opcion)
+            st.success("¡Página de manga generada y añadida al estudio!")
+            st.rerun()
+
+    st.markdown("---")
+    st.subheader("📚 Páginas de Manga Generadas")
     paginas = getattr(colmena, "paginas_manga", [])
     if paginas:
         for pag in reversed(paginas):
-            pag_id = pag["pag_id"]
-            st.markdown(f"### Plancha #{pag_id} — *{pag.get('escena', '')}*")
-            st.info(pag.get("guion_viñetas", ""))
-            
-            col_img, col_det = st.columns([1, 1])
-            with col_img:
+            pag_id = pag.get('pag_id')
+            st.markdown(f"### 📖 Página de Manga — Capítulo {pag_id}")
+            col_m1, col_m2 = st.columns([1, 1])
+            with col_m1:
                 st.image(pag.get("imagen_url"), use_container_width=True)
-            with col_det:
-                st.write("**Notas y Correcciones:**")
-                for corr in pag.get("correcciones", []):
-                    st.write(f"- {corr['nota']}")
-                nota_txt = st.text_input(f"Añadir nota a plancha #{pag_id}:", key=f"nota_m_{pag_id}")
-                if st.button(f"Guardar nota #{pag_id}", key=f"btn_m_{pag_id}"):
-                    if nota_txt:
-                        colmena.guardar_correccion_manga(pag_id, nota_txt)
-                        st.rerun()
-                if st.button(f"🗑️ Eliminar Plancha #{pag_id}", key=f"del_manga_{pag_id}"):
-                    colmena.eliminar_plancha_manga(pag_id)
+            with col_m2:
+                st.info(f"**Escena / Composición:**\n{pag.get('escena_resumen', '')}")
+                st.write(f"**Guion de Viñetas:**\n{pag.get('guion_viñetas', '')}")
+                if st.button(f"🗑️ Eliminar Página #{pag_id}", key=f"del_m_{pag_id}"):
+                    colmena.eliminar_pagina_manga(pag_id)
                     st.rerun()
             st.divider()
     else:
-        st.info("No hay planchas de manga generadas todavía.")
+        st.info("No hay páginas de manga en el estudio todavía.")
 
-# --- PESTAÑA 6: CONEXIÓN WATTPAD ---
+# --- PESTAÑA 4: BUZÓN INTELIGENTE ---
+with tab_asistencia:
+    st.header("❓ Buzón de Dudas Inteligente")
+    dudas = getattr(colmena, "dudas_agentes", [])
+    if dudas:
+        for d in reversed(dudas):
+            estado_txt = "✅ **Respondida**" if d["respondida"] else "⚠️ **Requiere respuesta**"
+            st.markdown(f"**[{d['timestamp']}] {d['agente']}** — {estado_txt}")
+            st.info(f"💬 \"{d['pregunta']}\"")
+            if d["respondida"]:
+                st.success(f"**Tu directriz:** {d['respuesta']}")
+            else:
+                resp_txt = st.text_input("Responder:", key=f"resp_d_{d['id']}")
+                if st.button(f"Guardar #{d['id']}", key=f"btn_d_{d['id']}"):
+                    if resp_txt:
+                        colmena.responder_duda(d['id'], resp_txt)
+                        st.success("¡Directriz guardada!")
+                        st.rerun()
+            st.divider()
+    else:
+        st.info("No hay dudas pendientes.")
+
+# --- PESTAÑA 5: BANCO MULTICANAL ---
+with tab_redes:
+    st.header("📢 Banco Multicanal (Aprobar o Eliminar)")
+    banco = getattr(colmena, "banco_contenido", [])
+    if banco:
+        for item in reversed(banco):
+            item_id = item.get('id')
+            copys = item.get('copys', {})
+            st.markdown(f"### 📦 Publicación #{item_id} (Capítulo {item.get('cap_asociado', 'N/A')})")
+            st.caption(f"Estado: **{item.get('estado', 'Pendiente')}**")
+            
+            col_c1, col_c2, col_c3 = st.columns(3)
+            with col_c1:
+                st.text_area("Feed:", copys.get('feed', ''), height=110, key=f"f_{item_id}")
+            with col_c2:
+                st.text_area("TikTok / Reel:", copys.get('tiktok_reel', ''), height=110, key=f"t_{item_id}")
+            with col_c3:
+                st.text_area("Historias:", copys.get('historia', ''), height=110, key=f"h_{item_id}")
+            
+            c_a1, c_a2 = st.columns(2)
+            with c_a1:
+                if st.button(f"🚀 Aprobar y Publicar #{item_id}", key=f"pub_{item_id}"):
+                    colmena.publicar_o_descartar_contenido(item_id, "publicar")
+                    st.success("¡Aprobado!")
+                    st.rerun()
+            with c_a2:
+                if st.button(f"🗑️ Eliminar #{item_id}", key=f"del_b_{item_id}"):
+                    colmena.publicar_o_descartar_contenido(item_id, "eliminar")
+                    st.warning("Eliminado.")
+                    st.rerun()
+            st.divider()
+    else:
+        st.info("Banco vacío.")
+
+# --- PESTAÑA 6: VÍDEOS ---
+with tab_videos:
+    st.header("🎬 Vídeos Conceptuales Verticales")
+    videos = getattr(colmena, "videos_tiktok", [])
+    if videos:
+        for vid in reversed(videos):
+            vid_id = vid.get('id')
+            st.markdown(f"### Vídeo — Capítulo {vid.get('capitulo', 'N/A')}")
+            c_v1, c_v2 = st.columns([1, 1])
+            with c_v1:
+                st.image(vid.get("preview_url"), use_container_width=True)
+            with c_v2:
+                st.info(f"**Guion:**\n{vid.get('guion_voz', '')}")
+                if st.button(f"🗑️ Eliminar Vídeo #{vid_id}", key=f"del_v_{vid_id}"):
+                    colmena.eliminar_video_tiktok(vid_id)
+                    st.rerun()
+            st.divider()
+    else:
+        st.info("No hay vídeos.")
+
+# --- PESTAÑA 7: WATTPAD ---
 with tab_wattpad:
     st.header("🔗 Conexión con Wattpad")
-    url_wattpad = st.text_input("Pega el enlace público de Wattpad para extraer el lore:")
+    url_wattpad = st.text_input("Enlace público:")
     if st.button("Asimilar Lore"):
         if url_wattpad:
             res = colmena.asimilar_historia_wattpad(url_wattpad)
-            st.success("¡Lore asimilado con éxito!")
+            st.success("¡Asimilado!")
             st.text_area("Resultado:", res, height=150)
 
-# --- PESTAÑA 7: CONFIGURACIÓN Y CREDENCIALES ESPECÍFICAS ---
+# --- PESTAÑA 8: CONFIGURACIÓN ---
 with tab_config:
-    st.header("⚙️ Configuración y Credenciales por Plataforma")
-    st.write("Introduce los campos específicos que te solicita cada plataforma para dejar configurada la automatización.")
-    
-    servicio_elegido = st.selectbox(
-        "Selecciona la plataforma a configurar:",
-        ["TikTok API", "Instagram / Meta Graph API", "Twitter (X) API", "Google AI Studio (Gemini API)", "Wattpad API / Token"]
-    )
-    
-    st.markdown("---")
-    
-    # Formulario dinámico según la plataforma seleccionada
-    if servicio_elegido == "TikTok API":
-        with st.form("form_cred_tiktok"):
-            st.subheader("🔑 Credenciales de TikTok for Developers")
-            c_key = st.text_input("Client Key:", value="awno6fxfgoe4q4gw")
-            c_secret = st.text_input("Client Secret:", type="password")
-            
-            if st.form_submit_button("💾 Guardar Credenciales de TikTok"):
-                if c_key and c_secret:
-                    colmena.guardar_credencial_especifica("TikTok API", {"client_key": c_key, "client_secret": c_secret})
-                    st.success("¡Credenciales de TikTok guardadas correctamente!")
-                    st.rerun()
-                else:
-                    st.warning("Rellena ambos campos.")
-                    
-    elif servicio_elegido == "Instagram / Meta Graph API":
-        with st.form("form_cred_meta"):
-            st.subheader("🔑 Credenciales de Meta (Instagram Graph)")
-            app_id = st.text_input("Meta App ID:")
-            app_secret = st.text_input("Meta App Secret:", type="password")
-            access_token = st.text_input("Long-Lived Access Token:", type="password")
-            
-            if st.form_submit_button("💾 Guardar Credenciales de Meta"):
-                if app_id and access_token:
-                    colmena.guardar_credencial_especifica("Instagram / Meta Graph API", {"app_id": app_id, "app_secret": app_secret, "access_token": access_token})
-                    st.success("¡Credenciales de Meta/Instagram guardadas correctamente!")
-                    st.rerun()
-                else:
-                    st.warning("Rellena al menos el App ID y el Access Token.")
-                    
-    elif servicio_elegido == "Twitter (X) API":
-        with st.form("form_cred_twitter"):
-            st.subheader("🔑 Credenciales de Twitter / X Developer")
-            api_key = st.text_input("API Key (Consumer Key):")
-            api_secret = st.text_input("API Secret (Consumer Secret):", type="password")
-            bearer_token = st.text_input("Bearer Token:", type="password")
-            
-            if st.form_submit_button("💾 Guardar Credenciales de Twitter"):
-                if api_key and bearer_token:
-                    colmena.guardar_credencial_especifica("Twitter (X) API", {"api_key": api_key, "api_secret": api_secret, "bearer_token": bearer_token})
-                    st.success("¡Credenciales de Twitter guardadas correctamente!")
-                    st.rerun()
-                else:
-                    st.warning("Rellena los campos obligatorios.")
-                    
-    else:
-        with st.form("form_cred_general"):
-            st.subheader(f"🔑 Credencial para {servicio_elegido}")
-            token_unico = st.text_input("Introduce el Token o Clave API:", type="password")
-            
-            if st.form_submit_button(f"💾 Guardar Credencial de {servicio_elegido}"):
-                if token_unico:
-                    colmena.guardar_credencial_especifica(servicio_elegido, {"token": token_unico})
-                    st.success(f"¡Credencial para '{servicio_elegido}' guardada correctamente!")
-                    st.rerun()
-                else:
-                    st.warning("Introduce un valor válido.")
-
-    st.markdown("---")
-    st.subheader("🛡️ Estado Actual de las Credenciales Registradas")
-    credenciales_guardadas = getattr(colmena, "credenciales", {})
-    if credenciales_guardadas:
-        for serv, info in credenciales_guardadas.items():
-            st.markdown(f"* **{serv}**: `Configurado y Guardado`")
-    else:
-        st.info("No hay credenciales configuradas todavía.")
+    st.header("⚙️ Configuración")
+    serv = st.selectbox("Plataforma:", ["TikTok API", "Instagram / Meta Graph API", "Twitter (X) API", "Google AI Studio", "Wattpad"])
+    with st.form("form_conf"):
+        val = st.text_input("Token o Credencial:", type="password")
+        if st.form_submit_button("Guardar"):
+            colmena.guardar_credencial_especifica(serv, {"token": val})
+            st.success("¡Guardado!")
+            st.rerun()

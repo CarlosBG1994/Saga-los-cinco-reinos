@@ -18,7 +18,8 @@ class GestorPersistencia:
         return {
             "banco_contenido": [], 
             "paginas_manga": [], 
-            "estado_agentes": "Control Manual y Coherente", 
+            "videos_tiktok": [],
+            "estado_agentes": "Modo Mangaka y Coherencia Avanzada", 
             "lore_wattpad": "", 
             "dudas_agentes": [],
             "lore_universo": [],
@@ -46,26 +47,67 @@ class AuraCoAutora:
             if response.status_code == 200:
                 soup = BeautifulSoup(response.text, 'html.parser')
                 parrafos = soup.find_all('p')
-                texto_extraido = " ".join([p.get_text() for p in parrafos])
-                if len(texto_extraido) > 200:
-                    return texto_extraido[:3000]
-            return "No se pudo extraer texto estructurado de la URL proporcionada."
+                return " ".join([p.get_text() for p in parrafos])[:3000]
+            return "No se pudo extraer texto estructurado."
         except Exception as e:
-            return f"Error de conexión con Wattpad: {e}"
+            return f"Error: {e}"
 
-    def redactar_con_coherencia(self, instruccion_usuario, lore_previo, capitulo_texto):
-        contexto_base = capitulo_texto[:500] if capitulo_texto else "Sin capítulo seleccionado."
-        return f"[Aura - Borrador Coherente] Basado estrictamente en tu obra y directriz ('{instruccion_usuario}'). Contexto analizado: {contexto_base}..."
+    def redactar_estrategia_multicanal(self, instruccion_usuario, capitulo_texto):
+        extracto = capitulo_texto[:1200] if capitulo_texto else "Sin capítulo."
+        return {
+            "feed": f"[Publicación Feed / Carrusel]\n{extracto[:300]}...\n\n👉 Adéntrate en Los Cinco Reinos.\n#LosCincoReinos #DarkFantasy #MangaArt #BookTok",
+            "tiktok_reel": f"[Vídeo / Reel / TikTok]\n(Escena inmersiva):\n\"Imagina estar leyendo un libro y de repente vivir la escena...\"\n\n{extracto[:250]}...\n\n#BookTokEspaña #FantasíaOscura #WritingCommunity",
+            "historia": f"[Historia / Story]\n⚡ Nuevo capítulo adaptado al manga. ¡Descúbrelo!",
+            "instruccion_base": instruccion_usuario
+        }
+
+    def describir_personaje_detallado(self, nombre_pj, contexto_obra):
+        # Aura genera una descripción visual hiper-precisa para que Hércules dibuje el boceto
+        prompt_visual = f"detailed character design sheet of {nombre_pj}, dark fantasy aesthetic, manga style line art, expressive face, detailed clothing, concept art, monochrome with ink details, {contexto_obra[:400]}"
+        return prompt_visual
 
 class HerculesMangaka:
-    def estructurar_plancha_real(self, num_cap, capitulo_texto):
-        extracto = capitulo_texto[:300] if capitulo_texto else "Trama oficial de la saga."
+    def generar_boceto_personaje(self, nombre_pj, descripcion_aura):
+        # Hércules genera el boceto visual del personaje en estilo dibujo/manga
+        prompt_encoded = requests.utils.quote(f"character concept sketch, manga style, {descripcion_aura}")
+        imagen_url = f"https://image.pollinations.ai/prompt/{prompt_encoded}?width=600&height=800&nologo=true"
+        return imagen_url
+
+    def estructurar_pagina_manga_avanzada(self, num_cap, capitulo_texto, estilo_narrativo=""):
+        extracto = capitulo_texto[:400] if capitulo_texto else "Trama del capítulo."
+        
+        # Hércules decide de forma inteligente si incluye la metáfora visual (ej. lector en biblioteca + pensamiento)
+        if "biblioteca" in estilo_narrativo.lower() or num_cap % 2 == 0:
+            escena_desc = "Viñeta 1: Un lector en una atmósfera silenciosa de una biblioteca antigua. Viñeta 2: Transición visual donde el fondo se desvanece en un pensamiento con la escena del libro en acción."
+            prompt_manga = f"manga page layout, split panel, a reader in an antique library transitioning into an epic fantasy battle thought bubble, detailed ink lines, black and white comic book style, {extracto}"
+        else:
+            escena_desc = "Secuencia de viñetas dinámicas adaptadas fielmente al clímax del capítulo."
+            prompt_manga = f"manga comic page layout, multiple panels, action and dialogue, cinematic ink lines, dark fantasy, {extracto}"
+
+        prompt_encoded = requests.utils.quote(prompt_manga)
+        pagina_url = f"https://image.pollinations.ai/prompt/{prompt_encoded}?width=800&height=1200&nologo=true"
+
         return {
             "pag_id": num_cap,
-            "escena": f"Adaptación fiel del Capítulo {num_cap}",
-            "guion_viñetas": f"Viñeta 1 (Inicio): Presentación de la escena basada en el texto real. | Viñeta 2 (Nudo): Desarrollo fiel. | Extracto de referencia: {extracto}",
-            "imagen_url": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=800&auto=format&fit=crop",
-            "correcciones": []
+            "escena_resumen": escena_desc,
+            "guion_viñetas": f"Guion técnico de Hércules para Cap {num_cap}: {extracto[:200]}...",
+            "imagen_url": pagina_url,
+            "estado": "Borrador de Manga Generado"
+        }
+
+    def generar_video_vertical_profesional(self, num_cap, capitulo_texto):
+        extracto = capitulo_texto[:300] if capitulo_texto else "Trama impactante."
+        prompt_vid = f"vertical 9:16 mobile video frame, dark fantasy anime aesthetic, intense dramatic lighting, motion blur, {extracto}"
+        prompt_encoded = requests.utils.quote(prompt_vid)
+        video_preview = f"https://image.pollinations.ai/prompt/{prompt_encoded}?width=720&height=1280&nologo=true"
+
+        return {
+            "id": num_cap,
+            "tipo": "Vídeo / Reel / TikTok (9:16)",
+            "capitulo": num_cap,
+            "preview_url": video_preview,
+            "guion_voz": f"Locución: '¿Y si el libro que lees cobra vida ante ti?' (Capítulo {num_cap}).",
+            "estado": "Pendiente"
         }
 
 class ColmenaBufferInfinito:
@@ -73,19 +115,21 @@ class ColmenaBufferInfinito:
         self.aura = AuraCoAutora()
         self.hercules = HerculesMangaka()
         datos = GestorPersistencia.cargar_datos()
-        self.banco_contenido_semanal = datos.get("banco_contenido", [])
+        self.banco_contenido = datos.get("banco_contenido", [])
         self.paginas_manga = datos.get("paginas_manga", [])
+        self.videos_tiktok = datos.get("videos_tiktok", [])
         self.lore_wattpad = datos.get("lore_wattpad", "")
         self.dudas_agentes = datos.get("dudas_agentes", [])
         self.lore_universo = datos.get("lore_universo", [])
         self.credenciales = datos.get("credenciales", {})
         self.metricas_redes = datos.get("metricas_redes", {})
-        self.estado_agentes = "Modo Asistido y Coherente"
+        self.estado_agentes = "Autónomo y Especializado en Manga"
 
     def sincronizar(self):
         GestorPersistencia.guardar_datos({
-            "banco_contenido": self.banco_contenido_semanal,
+            "banco_contenido": self.banco_contenido,
             "paginas_manga": self.paginas_manga,
+            "videos_tiktok": self.videos_tiktok,
             "estado_agentes": self.estado_agentes,
             "lore_wattpad": self.lore_wattpad,
             "dudas_agentes": self.dudas_agentes,
@@ -95,94 +139,98 @@ class ColmenaBufferInfinito:
         })
 
     def asimilar_historia_wattpad(self, url):
-        texto_leido = self.aura.leer_wattpad(url)
-        self.lore_wattpad = texto_leido
+        texto = self.aura.leer_wattpad(url)
+        self.lore_wattpad = texto
         self.sincronizar()
-        return texto_leido
+        return texto
 
     def obtener_capitulo(self, num):
-        posibles_rutas = [
-            f"capitulo {num}.txt",
-            f"capitulo_{num}.txt",
-            os.path.join("capitulos", f"capitulo {num}.txt"),
-            os.path.join("capitulos", f"capitulo_{num}.txt")
-        ]
-        descripcion_texto = ""
+        rutas = [f"capitulo {num}.txt", f"capitulo_{num}.txt", os.path.join("capitulos", f"capitulo {num}.txt")]
+        desc = ""
         encontrado = False
-        for ruta in posibles_rutas:
-            if os.path.exists(ruta):
+        for r in rutas:
+            if os.path.exists(r):
                 try:
-                    with open(ruta, "r", encoding="utf-8") as f:
-                        descripcion_texto = f.read()
+                    with open(r, "r", encoding="utf-8") as f:
+                        desc = f.read()
                         encontrado = True
                         break
                 except Exception as e:
-                    descripcion_texto = f"Error al leer el archivo: {e}"
+                    desc = f"Error: {e}"
                     encontrado = True
                     break
         if not encontrado:
-            descripcion_texto = f"Aún no se ha encontrado el archivo para el Capítulo {num} en la raíz del repositorio."
-        return {
-            "titulo": f"Capítulo {num}: Los Cinco Reinos",
-            "descripcion": descripcion_texto
-        }
+            desc = f"Capítulo {num} pendiente de carga en la raíz."
+        return {"titulo": f"Capítulo {num}: Los Cinco Reinos", "descripcion": desc}
 
-    def generar_dudas_automaticas_capitulo(self, num_cap, capitulo_texto):
+    def procesar_autonomia_capitulo(self, num_cap, capitulo_texto):
         existentes = [d for d in self.dudas_agentes if f"Capítulo {num_cap}" in d.get("pregunta", "")]
-        if existentes:
-            return
-
-        duda_aura = {
-            "id": len(self.dudas_agentes) + 1,
-            "agente": "Aura (Co-autora)",
-            "pregunta": f"[Capítulo {num_cap}] ¿Cuál debe ser el enfoque emocional principal de los personajes en esta escena y qué tono de tensión buscas?",
-            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M"),
-            "respondida": False,
-            "respuesta": ""
-        }
-        self.dudas_agentes.append(duda_aura)
-
-        duda_hercules = {
-            "id": len(self.dudas_agentes) + 2,
-            "agente": "Hércules (Mangaka)",
-            "pregunta": f"[Capítulo {num_cap}] ¿Qué elemento visual clave o escenario principal quieres que destaque obligatoriamente en la plancha de este capítulo?",
-            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M"),
-            "respondida": False,
-            "respuesta": ""
-        }
-        self.dudas_agentes.append(duda_hercules)
+        if not existentes and len(capitulo_texto) > 100:
+            self.dudas_agentes.append({
+                "id": len(self.dudas_agentes) + 1,
+                "agente": "Aura & Hércules",
+                "pregunta": f"[Capítulo {num_cap}] ¿Quieres que apliquemos la metáfora visual del lector en la biblioteca conectando con el pensamiento del libro en este capítulo?",
+                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M"),
+                "respondida": False,
+                "respuesta": ""
+            })
         self.sincronizar()
 
-    def generar_contenido_manual(self, instruccion, num_cap):
-        info_cap = self.obtener_capitulo(num_cap)
-        texto_generado = self.aura.redactar_con_coherencia(instruccion, self.lore_wattpad, info_cap["descripcion"])
-        
-        nuevo_item = {
-            "id": len(self.banco_contenido_semanal) + 1,
-            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M"),
-            "texto": texto_generado,
-            "cap_asociado": num_cap,
-            "estado": "Revisión Requerida"
-        }
-        self.banco_contenido_semanal.append(nuevo_item)
-        self.sincronizar()
-        return nuevo_item
+    def guardar_personaje_con_boceto(self, nombre, descripcion):
+        # Aura describe y Hércules dibuja el boceto inicial del personaje
+        prompt_visual = self.aura.describir_personaje_detallado(nombre, descripcion)
+        boceto_url = self.hercules.generar_boceto_personaje(nombre, prompt_visual)
 
-    def generar_manga_manual(self, num_cap):
-        info_cap = self.obtener_capitulo(num_cap)
-        nueva_pag = self.hercules.estructurar_plancha_real(num_cap, info_cap["descripcion"])
-        self.paginas_manga.append(nueva_pag)
-        self.sincronizar()
-
-    def registrar_duda(self, pregunta, agente):
-        self.dudas_agentes.append({
-            "id": len(self.dudas_agentes) + 1,
-            "agente": agente,
-            "pregunta": pregunta,
-            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M"),
-            "respondida": False,
-            "respuesta": ""
+        self.lore_universo.append({
+            "id": len(self.lore_universo) + 1,
+            "categoria": "Personaje",
+            "nombre": nombre,
+            "descripcion": descripcion,
+            "prompt_visual": prompt_visual,
+            "boceto_url": boceto_url,
+            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M")
         })
+        self.sincronizar()
+
+    def actualizar_boceto_personaje(self, personaje_id, nueva_descripcion):
+        for p in self.lore_universo:
+            if p["id"] == personaje_id and p["categoria"] == "Personaje":
+                p["descripcion"] = nueva_descripcion
+                p["prompt_visual"] = self.aura.describir_personaje_detallado(p["nombre"], nueva_descripcion)
+                p["boceto_url"] = self.hercules.generar_boceto_personaje(p["nombre"], p["prompt_visual"])
+                self.sincronizar()
+                break
+
+    def generar_pagina_manga_capitulo(self, num_cap, estilo_narrativa=""):
+        info = self.obtener_capitulo(num_cap)
+        nueva_pagina = self.hercules.estructurar_pagina_manga_avanzada(num_cap, info["descripcion"], estilo_narrativa)
+        self.paginas_manga.append(nueva_pagina)
+        self.sincronizar()
+
+    def generar_paquete_creativo_completo(self, instruccion, num_cap):
+        info = self.obtener_capitulo(num_cap)
+        texto_cap = info["descripcion"]
+
+        copys = self.aura.redactar_estrategia_multicanal(instruccion, texto_cap)
+        video_rec = self.hercules.generar_video_vertical_profesional(num_cap, texto_cap)
+        self.videos_tiktok.append(video_rec)
+
+        self.banco_contenido.append({
+            "id": len(self.banco_contenido) + 1,
+            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M"),
+            "cap_asociado": num_cap,
+            "copys": copys,
+            "estado": "Pendiente de Aprobación"
+        })
+        self.sincronizar()
+
+    def publicar_o_descartar_contenido(self, item_id, accion):
+        if accion == "eliminar":
+            self.banco_contenido = [i for i in self.banco_contenido if i["id"] != item_id]
+        elif accion == "publicar":
+            for i in self.banco_contenido:
+                if i["id"] == item_id:
+                    i["estado"] = "🚀 Publicado con Éxito"
         self.sincronizar()
 
     def responder_duda(self, duda_id, respuesta):
@@ -193,48 +241,27 @@ class ColmenaBufferInfinito:
                 self.sincronizar()
                 break
 
-    def guardar_elemento_lore(self, categoria, nombre, descripcion):
-        nuevo_elemento = {
-            "id": len(self.lore_universo) + 1,
-            "categoria": categoria,
-            "nombre": nombre,
-            "descripcion": descripcion,
-            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M")
-        }
-        self.lore_universo.append(nuevo_elemento)
+    def eliminar_elemento_lore(self, elem_id):
+        self.lore_universo = [e for e in self.lore_universo if e["id"] != elem_id]
         self.sincronizar()
 
-    def eliminar_elemento_lore(self, elemento_id):
-        self.lore_universo = [e for e in self.lore_universo if e["id"] != elemento_id]
-        self.sincronizar()
-
-    def eliminar_item_banco(self, item_id):
-        self.banco_contenido_semanal = [i for i in self.banco_contenido_semanal if i["id"] != item_id]
-        self.sincronizar()
-
-    def eliminar_plancha_manga(self, pag_id):
+    def eliminar_pagina_manga(self, pag_id):
         self.paginas_manga = [p for p in self.paginas_manga if p["pag_id"] != pag_id]
         self.sincronizar()
 
-    def guardar_correccion_manga(self, pag_id, nota):
-        for pag in self.paginas_manga:
-            if pag["pag_id"] == pag_id:
-                pag["correcciones"].append({
-                    "fecha": datetime.now().strftime("%Y-%m-%d %H:%M"),
-                    "nota": nota
-                })
-                self.sincronizar()
-                break
-
-    def guardar_credencial_especifica(self, servicio, datos_dict):
-        self.credenciales[servicio] = datos_dict
+    def eliminar_video_tiktok(self, vid_id):
+        self.videos_tiktok = [v for v in self.videos_tiktok if v["id"] != vid_id]
         self.sincronizar()
 
-    def actualizar_metricas_red(self, plataforma, seguidores, rendimiento_principal, interacciones):
-        self.metricas_redes[plataforma] = {
-            "seguidores": seguidores,
-            "rendimiento_principal": rendimiento_principal,
-            "interacciones": interacciones,
+    def guardar_credencial_especifica(self, servicio, datos):
+        self.credenciales[servicio] = datos
+        self.sincronizar()
+
+    def actualizar_metricas_red(self, plat, seg, rend, inter):
+        self.metricas_redes[plat] = {
+            "seguidores": seg,
+            "rendimiento_principal": rend,
+            "interacciones": inter,
             "ultima_actualizacion": datetime.now().strftime("%Y-%m-%d %H:%M")
         }
         self.sincronizar()
