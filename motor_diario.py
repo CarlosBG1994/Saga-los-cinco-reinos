@@ -9,13 +9,7 @@ ARCHIVO_DATOS = "datos_saga.json"
 class GestorPersistencia:
     @staticmethod
     def cargar_datos():
-        if os.path.exists(ARCHIVO_DATOS):
-            try:
-                with open(ARCHIVO_DATOS, "r", encoding="utf-8") as f:
-                    return json.load(f)
-            except Exception:
-                pass
-        return {
+        datos_por_defecto = {
             "banco_contenido": [], 
             "paginas_manga": [], 
             "videos_tiktok": [],
@@ -25,9 +19,20 @@ class GestorPersistencia:
                 "prompt_manga": "professional manga page, detailed ink line art, dark fantasy comic book panel, high contrast, screentones, epic composition based on: {escena}",
                 "prompt_video": "vertical 9:16 mobile wallpaper aspect ratio, cinematic mockup of a person reading a fantasy novel in a cozy room, {escena}"
             },
-            "estado_agentes": "Co-autoría literaria y generador de continuidad activo", 
+            "estado_agentes": "Sistema operativo y co-autoría activa", 
             "lore_wattpad": "", 
-            "dudas_agentes": [],
+            "dudas_agentes": [
+                {
+                    "id": 1,
+                    "agente": "Aura",
+                    "rol": "Estratega de Marketing",
+                    "estado": "Esperando directriz",
+                    "pregunta": "¿Jefe, enfocamos la campaña de esta semana en lectores inmersivos o en un tono más oscuro?",
+                    "timestamp": "Hoy",
+                    "respondida": False,
+                    "respuesta": ""
+                }
+            ],
             "lore_universo": [],
             "credenciales": {},
             "metricas_redes": {
@@ -37,9 +42,23 @@ class GestorPersistencia:
             },
             "config_temporizador": {"frecuencia": "Cada 6 horas", "activo": True, "ultima_ejecucion": "Nunca"},
             "chat_colmena": [
-                {"origen": "Aura", "mensaje": "Módulo de co-autoría y continuidad literaria preparado. Dime qué tienes en mente para el siguiente capítulo y te redactaré una propuesta con ganchos amenos para atrapar al lector."}
-            ]
+                {"origen": "Aura", "mensaje": "Sistema de co-autoría y chat interno en línea. ¡Listo para trabajar!"}
+            ],
+            "propuestas_escritura": []
         }
+
+        if os.path.exists(ARCHIVO_DATOS):
+            try:
+                with open(ARCHIVO_DATOS, "r", encoding="utf-8") as f:
+                    datos_cargados = json.load(f)
+                    # Fusionamos para asegurar que ninguna clave nueva falte
+                    for k, v in datos_por_defecto.items():
+                        if k not in datos_cargados:
+                            datos_cargados[k] = v
+                    return datos_cargados
+            except Exception:
+                pass
+        return datos_por_defecto
 
     @staticmethod
     def guardar_datos(datos):
@@ -85,7 +104,6 @@ class AuraCoAutora:
         return []
 
     def coautor_continuidad_capitulo(self, idea_usuario, ultimo_texto):
-        # Aura redacta una propuesta de continuación y corrección orientada a dinamismo y retención
         contexto_previo = ultimo_texto[:600] if ultimo_texto else "Inicio de la obra."
         propuesta = (
             f"👑 [Propuesta de Continuación y Corrección — Aura]\n\n"
