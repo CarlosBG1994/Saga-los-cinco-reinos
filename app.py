@@ -7,13 +7,14 @@ st.set_page_config(
     layout="wide"
 )
 
-if "colmena_buffer" not in st.session_state:
+# Inicialización segura que previene errores de atributos antiguos en caché
+if "colmena_buffer" not in st.session_state or not hasattr(st.session_state.colmena_buffer, "procesar_autonomia_capitulo"):
     st.session_state.colmena_buffer = ColmenaBufferInfinito()
 
 colmena = st.session_state.colmena_buffer
 
 st.title("👑 Centro de Mando & Mangaka - Los Cinco Reinos")
-st.info("💡 *Gestión avanzada: Aura describe con precisión, Hércules diseña bocetos editables por personaje y estructura las páginas de manga (con opciones de biblioteca y pensamientos).*")
+st.info("💡 *Gestión avanzada: Aura describe con precisión, Hércules diseña bocetos editables por personaje y estructura las páginas de manga.*")
 
 tab_capitulos, tab_bocetos, tab_manga, tab_asistencia, tab_redes, tab_videos, tab_wattpad, tab_config = st.tabs([
     "📖 Capítulos y Órdenes",
@@ -80,7 +81,6 @@ with tab_bocetos:
             with col_b2:
                 st.write(f"**Descripción actual (Aura):**\n{p['descripcion']}")
                 
-                # Campo para modificar el boceto y redefinir al personaje
                 nueva_desc = st.text_area(f"Modificar rasgos de {p['nombre']}:", value=p['descripcion'], key=f"desc_pj_{p_id}")
                 if st.button(f"🔄 Actualizar y Redibujar Boceto de {p['nombre']}", key=f"btn_upd_{p_id}"):
                     colmena.actualizar_boceto_personaje(p_id, nueva_desc)
