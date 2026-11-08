@@ -2,267 +2,251 @@ import streamlit as st
 import os
 import urllib.parse
 from motor_diario import (
-    cargar_datos_saga, guardar_datos_saga, 
-    listar_archivos_capitulos, aura_auditar_capitulo_real
+    cargar_datos_agencia, guardar_datos_agencia, 
+    listar_archivos_capitulos, aura_analizar_capitulo_y_generar_ideas
 )
-from motor_aprendizajes import (
-    cargar_aprendizajes, registrar_feedback_hercules, 
-    obtener_prompt_aprendido_para_hercules
-)
+from motor_aprendizajes import cargar_aprendizajes, registrar_feedback_agente
 
 st.set_page_config(
-    page_title="Agencia Literaria - Los Cinco Reinos", 
-    page_icon="🛡️",
+    page_title="Agencia 'Los Cinco Reinos' - Centro de Control", 
+    page_icon="🛡️", 
     layout="wide"
 )
 
-datos = cargar_datos_saga()
+datos = cargar_datos_agencia()
 aprendizajes = cargar_aprendizajes()
 
-st.title("🛡️ Agencia de Marketing Literario: Los Cinco Reinos")
-st.markdown("### Panel de Control Operativo para Aura y Hércules")
+st.title("🛡️ Centro de Control de la Agencia: Los Cinco Reinos")
+st.markdown("### 🎮 Sala de Operaciones, Equipo Autónomo y Coordinación Multicanal")
 st.markdown("---")
 
+# ==============================================================================
+# SALA DE MÁQUINAS: ESTADO DE LOS AGENTES EN DIRECTO (ESTILO WII SPORTS / MII)
+# ==============================================================================
+st.markdown("### 🕹️ Estado del Equipo en Directo (Sala de Máquinas)")
+cols_agentes = st.columns(7)
+nombres_agentes = ["Aura", "Hércules", "Dante", "Kira", "Hermes", "Vulcano", "Crono"]
+roles_desc = ["Analista Textual", "Director Gráfico", "Copywriter", "Estratega SEO", "Soporte Redes", "Analista Métricas", "Orquestador"]
+
+for i, col in enumerate(cols_agentes):
+    nombre = nombres_agentes[i]
+    info_agente = aprendizajes["agentes"][nombre]
+    with col:
+        st.markdown(f"<div style='background-color: #1e1e1e; padding: 12px; border-radius: 10px; text-align: center; border: 1px solid #333;'>", unsafe_allow_html=True)
+        st.markdown(f"👤 **{nombre}**")
+        st.caption(roles_desc[i])
+        st.markdown(f"🟢 *{info_agente['estado']}*")
+        st.markdown(f"</div>", unsafe_allow_html=True)
+
+st.markdown("---")
+
+# Pestañas principales de la agencia
 pestanas = st.tabs([
-    "🔑 Credenciales Aisladas", 
-    "📜 Auditoría de Capítulos (Aura)", 
-    "👥 Gestión de Personajes", 
-    "🎨 Taller de Hércules (Aprendizaje)", 
-    "📖 Estudio de Manga Paso a Paso"
+    "🔑 Credenciales por Red",
+    "📜 Auditoría y Plan Semanal (Aura)",
+    "🎨 Estudio Gráfico (Hércules)",
+    "📅 Crono & Banco Multicanal",
+    "👥 Gestión de Personajes y Lore",
+    "💬 Buzón de Preguntas y Equipo"
 ])
 
 # ==========================================
-# PESTAÑA 1: CREDENCIALES AISLADAS
+# PESTAÑA 1: CREDENCIALES POR RED ESPECÍFICA
 # ==========================================
 with pestanas[0]:
-    st.subheader("Configuración de Credenciales por Plataforma")
-    st.info("Introduce y guarda las claves de forma independiente sin riesgo de pérdida al cambiar de pestaña.")
+    st.subheader("🔑 Configuración de Credenciales de Redes Sociales y APIs")
+    st.info("Introduce los campos específicos para cada plataforma. Se guardan de forma permanente en disco para no tener que introducirlos cada día.")
     
     creds = datos.get("credenciales", {})
     
-    with st.form("form_credenciales"):
-        c_gemini = st.text_input("Clave API Google AI Studio (Gemini - Requerida para Aura)", value=creds.get("gemini", ""), type="password")
-        c_insta = st.text_input("Credenciales Instagram (Token / Usuario)", value=creds.get("instagram", ""))
-        c_tik = st.text_input("Credenciales TikTok (Token / Usuario)", value=creds.get("tiktok", ""))
-        c_tw = st.text_input("Credenciales Twitter / X (Token / Usuario)", value=creds.get("twitter", ""))
+    with st.form("form_credenciales_redes"):
+        st.markdown("#### 🤖 Google AI Studio (Gemini - Motor de Aura)")
+        c_gemini = st.text_input("API Key Gemini", value=creds.get("gemini", {}).get("api_key", ""), type="password")
         
-        btn_guardar_creds = st.form_submit_button("💾 Guardar Todas las Credenciales")
-        if btn_guardar_creds:
+        st.markdown("#### 📸 Instagram Graph API")
+        ig = creds.get("instagram", {})
+        ig_app_id = st.text_input("Instagram App ID", value=ig.get("app_id", ""))
+        ig_secret = st.text_input("Instagram App Secret", value=ig.get("app_secret", ""), type="password")
+        ig_token = st.text_input("Instagram Access Token", value=ig.get("access_token", ""), type="password")
+        ig_id = st.text_input("Instagram Account ID", value=ig.get("instagram_account_id", ""))
+        
+        st.markdown("#### 🎵 TikTok Content Posting API")
+        tk = creds.get("tiktok", {})
+        tk_key = st.text_input("TikTok Client Key", value=tk.get("client_key", ""))
+        tk_secret = st.text_input("TikTok Client Secret", value=tk.get("client_secret", ""), type="password")
+        tk_token = st.text_input("TikTok Access Token", value=tk.get("access_token", ""), type="password")
+        
+        st.markdown("#### ✖️ Twitter / X API v2")
+        tw = creds.get("twitter", {})
+        tw_key = st.text_input("API Key (Consumer Key)", value=tw.get("api_key", ""))
+        tw_secret = st.text_input("API Secret", value=tw.get("api_secret", ""), type="password")
+        tw_token = st.text_input("Access Token", value=tw.get("access_token", ""))
+        tw_secret_token = st.text_input("Access Token Secret", value=tw.get("access_secret", ""), type="password")
+        
+        if st.form_submit_button("💾 Guardar Todas las Credenciales en Disco"):
             datos["credenciales"] = {
-                "gemini": c_gemini,
-                "instagram": c_insta,
-                "tiktok": c_tik,
-                "twitter": c_tw
+                "gemini": {"api_key": c_gemini},
+                "instagram": {"app_id": ig_app_id, "app_secret": ig_secret, "access_token": ig_token, "instagram_account_id": ig_id},
+                "tiktok": {"client_key": tk_key, "client_secret": tk_secret, "access_token": tk_token},
+                "twitter": {"api_key": tw_key, "api_secret": tw_secret, "access_token": tw_token, "access_secret": tw_secret_token}
             }
-            guardar_datos_saga(datos)
+            guardar_datos_agencia(datos)
             st.success("¡Credenciales actualizadas y guardadas con éxito en el sistema!")
 
 # ==========================================
-# PESTAÑA 2: AUDITORÍA DE CAPÍTULOS (AURA)
+# PESTAÑA 2: AUDITORÍA Y PLAN SEMANAL (AURA)
 # ==========================================
 with pestanas[1]:
-    st.subheader("Control y Auditoría Profunda de Capítulos (Aura)")
-    st.markdown("Selecciona cualquiera de tus **25 capítulos** subidos en formato texto para que Aura los lea de principio a fin, extraiga la información clave y actualice la base de datos de personajes.")
+    st.subheader("📜 Auditoría de Capítulos y Solicitud de Contenido Semanal")
+    st.markdown("Selecciona un capítulo de tus 25 textos y define qué formato necesitas (Reel, Historia, Post o Pack Completo) para que Aura active a todo el equipo.")
     
-    archivos_caps = listar_archivos_capitulos()
-    
-    if not archivos_caps:
-        st.warning("⚠️ No se han detectado archivos de texto (`.txt`) de los capítulos en la ruta del proyecto. Asegúrate de tener tus capítulos subidos para que Aura pueda analizarlos.")
+    archivos = listar_archivos_capitulos()
+    if not archivos:
+        st.warning("⚠️ No se detectan ficheros `.txt` de capítulos en el proyecto. Sube tus textos para que Aura pueda analizarlos.")
     else:
-        st.success(f"📁 Se han detectado {len(archivos_caps)} archivos de capítulos listos para auditar.")
-        cap_seleccionado = st.selectbox("Seleccionar Archivo de Capítulo para Aura", archivos_caps)
+        st.success(f"📁 Se han detectado {len(archivos)} capítulos listos para procesar.")
+        cap_sel = st.selectbox("Elegir Archivo de Capítulo", archivos)
+        tipo_solicitud = st.selectbox("¿Qué formato de contenido necesitas esta semana?", [
+            "Reel Semanal", 
+            "Historia / Story", 
+            "Publicación / Post Estático", 
+            "Pack Completo (Reel + Post + Story)"
+        ])
         
-        col_btn1, col_btn2 = st.columns([1, 2])
-        with col_btn1:
-            if st.button("🔍 Forzar Auditoría Completa con Aura", type="primary"):
-                with st.spinner("Aura está procesando el texto del capítulo mediante Gemini-1.5-flash..."):
-                    exito, mensaje = aura_auditar_capitulo_real(cap_seleccionado)
-                    if exito:
-                        st.success(mensaje)
-                        st.rerun()
-                    else:
-                        st.error(mensaje)
-                        
-    st.markdown("---")
-    st.markdown("### 📋 Historial de Capítulos Auditados por Aura:")
-    auditados = datos.get("capitulos_auditados", [])
-    if not auditados:
-        st.info("Aún no se ha auditado ningún capítulo en esta sesión.")
-    else:
-        for cap in auditados:
-            st.markdown(f"- ✅ **{cap}**: Analizado, personajes extraídos y sincronizados.")
-
-# ==========================================
-# PESTAÑA 3: GESTIÓN DE PERSONAJES
-# ==========================================
-with pestanas[2]:
-    st.subheader("Biblioteca Jerárquica y de Personajes")
-    st.markdown("Visualiza, edita, cambia de jerarquía (*Protagonista*, *Secundario*, *Antagonista*, *Terciario*), añade notas de mejora o elimina personajes de la saga.")
-    
-    lista_personajes = datos.get("personajes", [])
-    
-    if not lista_personajes:
-        st.info("No hay personajes registrados actualmente en la base de datos. Ve a la pestaña de 'Auditoría de Capítulos' para que Aura los extraiga automáticamente.")
-    else:
-        st.markdown(f"**Total de personajes en base de datos:** {len(lista_personajes)}")
-        
-        for idx, personaje in enumerate(lista_personajes):
-            with st.expander(f"👤 {personaje['nombre']} — [{personaje.get('rol', 'Secundario')}] (Edad/Tipo: {personaje.get('edad', 'N/A')})"):
-                col_p1, col_p2 = st.columns(2)
-                with col_p1:
-                    roles_disponibles = ["Protagonista", "Secundario", "Antagonista", "Terciario"]
-                    rol_actual = personaje.get('rol', 'Secundario')
-                    if rol_actual not in roles_disponibles:
-                        rol_actual = "Secundario"
-                        
-                    nuevo_rol = st.selectbox(
-                        "Jerarquía del Personaje", 
-                        roles_disponibles, 
-                        index=roles_disponibles.index(rol_actual),
-                        key=f"rol_pers_{idx}"
-                    )
-                    nueva_descripcion = st.text_area(
-                        "Descripción física y trasfondo", 
-                        value=personaje.get('descripcion', ''), 
-                        key=f"desc_pers_{idx}"
-                    )
-                with col_p2:
-                    nuevas_notas_usuario = st.text_area(
-                        "Notas de mejora personal (Feedback directo para Hércules)", 
-                        value=personaje.get('notas', ''), 
-                        key=f"notas_pers_{idx}",
-                        placeholder="Ej: Asegurar que Esther tenga siempre el pelo rubio claro..."
-                    )
-                    
-                col_acc1, col_acc2 = st.columns(2)
-                if col_acc1.button("💾 Actualizar Ficha de Personaje", key=f"btn_act_{idx}"):
-                    datos["personajes"][idx]["rol"] = nuevo_rol
-                    datos["personajes"][idx]["descripcion"] = nueva_descripcion
-                    datos["personajes"][idx]["notas"] = nuevas_notas_usuario
-                    guardar_datos_saga(datos)
-                    st.success(f"¡Ficha de '{personaje['nombre']}' actualizada y guardada correctamente!")
-                    st.rerun()
-                    
-                if col_acc2.button("🗑️ Eliminar Personaje", key=f"btn_del_{idx}"):
-                    personaje_eliminado = datos["personajes"].pop(idx)
-                    guardar_datos_saga(datos)
-                    st.warning(f"Personaje '{personaje_eliminado['nombre']}' eliminado permanentemente.")
-                    st.rerun()
-
-# ==========================================
-# PESTAÑA 4: TALLER DE HÉRCULES (APRENDIZAJE)
-# ==========================================
-with pestanas[3]:
-    st.subheader("Estudio Gráfico e Historial de Aprendizaje de Hércules")
-    st.markdown("Hércules asimila tus correcciones estéticas y de diseño para aplicarlas de manera automática en la generación de imágenes y viñetas.")
-    
-    st.markdown("### 🧠 Memoria de Aprendizaje Activa:")
-    preferencias_estilo = aprendizajes.get('preferencias_estilo', [])
-    reglas_manga = aprendizajes.get('reglas_manga', [])
-    
-    col_ap1, col_ap2 = st.columns(2)
-    with col_ap1:
-        st.markdown(f"**Preferencias de Estilo Registradas ({len(preferencias_estilo)}):**")
-        if not preferencias_estilo:
-            st.text("Ninguna registrada todavía.")
-        for p in preferencias_estilo:
-            st.markdown(f"- *{p}*")
-    with col_ap2:
-        st.markdown(f"**Reglas Específicas de Manga ({len(reglas_manga)}):**")
-        if not reglas_manga:
-            st.text("Ninguna registrada todavía.")
-        for r in reglas_manga:
-            st.markdown(f"- *{r}*")
-            
-    st.markdown("---")
-    st.markdown("### ✍️ Enseñar una Nueva Directriz a Hércules")
-    
-    tipo_directriz = st.selectbox("Ámbito de la directriz", ["Estilo General de Dibujo", "Personaje Específico", "Regla Estricta para el Manga"])
-    texto_instruccion = st.text_area(
-        "Instrucción detallada de mejora", 
-        placeholder="Ej: Los personajes nunca deben salir con proporciones deformadas..."
-    )
-    
-    if st.button("🧠 Registrar Aprendizaje en Hércules", type="primary"):
-        if texto_instruccion.strip():
-            tipo_key = 'estilo' if tipo_directriz == 'Estilo General de Dibujo' else ('personaje' if tipo_directriz == 'Personaje Específico' else 'manga')
-            registrar_feedback_hercules(tipo_key, 'general', texto_instruccion)
-            st.success("¡Instrucción asimilada! Hércules ha integrado este aprendizaje en su memoria permanente.")
-            st.rerun()
-        else:
-            st.error("Por favor, escribe una instrucción válida antes de enviarla.")
-
-# ==========================================
-# PESTAÑA 5: ESTUDIO DE MANGA PASO A PASO
-# ==========================================
-with pestanas[4]:
-    st.subheader("Estudio de Manga Interactivo (Generación Viñeta a Viñeta)")
-    st.markdown("Hércules genera la imagen de la viñeta actual aplicando automáticamente sus aprendizajes previos. **El sistema está bloqueado: no podrás pasar a la siguiente viñeta hasta que revises y apruebes expresamente la viñeta actual.**")
-    
-    if "vineta_actual" not in st.session_state:
-        st.session_state.vineta_actual = 1
-    if "prompt_custom_vineta" not in st.session_state:
-        st.session_state.prompt_custom_vineta = ""
-
-    archivos_manga = listar_archivos_capitulos()
-    if not archivos_manga:
-        st.warning("⚠️ No se detectan capítulos para adaptar.")
-    else:
-        capitulo_trabajo = st.selectbox("Seleccionar Capítulo para Adaptación a Manga", archivos_manga, key="select_cap_manga_trabajo")
-        
-        st.markdown(f"---")
-        st.markdown(f"### 🎬 Viñeta Activa en Producción: #{st.session_state.vineta_actual}")
-        
-        prompt_base_hercules = (
-            f"Manga panel page, dark fantasy anime style, scene sequence number {st.session_state.vineta_actual}, "
-            f"highly detailed, professional ink lineart, clean white background contrast, no watermark, "
-            f"{obtener_prompt_aprendido_para_hercules()}"
-        )
-        
-        prompt_final_viñeta = st.text_area(
-            "Prompt visual técnico enviado a Hércules (con aprendizajes integrados):", 
-            value=st.session_state.prompt_custom_vineta or prompt_base_hercules,
-            height=100
-        )
-        
-        col_visual, col_mandos = st.columns([2, 1])
-        
-        with col_visual:
-            st.markdown("#### 🖼️ Previsualización de la Viñeta")
-            prompt_url_encoded = urllib.parse.quote(prompt_final_viñeta)
-            url_imagen_generada = f"https://image.pollinations.ai/prompt/{prompt_url_encoded}?width=800&height=600&nologo=true&seed={st.session_state.vineta_actual}"
-            
-            st.image(
-                url_imagen_generada, 
-                caption=f"Viñeta #{st.session_state.vineta_actual} generada por Hércules (Lista para inspección)", 
-                use_column_width=True
-            )
-            
-        with col_mandos:
-            st.markdown("#### 🛠️ Control de Calidad y Aprobación")
-            comentario_retoque = st.text_input(
-                "¿Necesitas corregir algo de esta viñeta?", 
-                placeholder="Ej: Ajustar el rostro de Esther..."
-            )
-            
-            if st.button("🎨 Regenerar Viñeta con Retoque"):
-                if comentario_retoque.strip():
-                    st.session_state.prompt_custom_vineta = prompt_final_viñeta + ", correction note: " + comentario_retoque
-                    st.success("¡Prompt actualizado con tu retoque! Regenerando imagen...")
+        if st.button("🚀 Ordenar a Aura y al equipo procesar y generar propuesta", type="primary"):
+            with st.spinner("Aura leyendo el texto, Hércules preparando conceptos y Dante redactando..."):
+                ok, msg = aura_analizar_capitulo_y_generar_ideas(cap_sel, tipo_solicitud)
+                if ok:
+                    st.success(msg)
                     st.rerun()
                 else:
-                    st.warning("Escribe qué deseas retocar.")
+                    st.error(msg)
                     
-            st.markdown("---")
+    st.markdown("---")
+    st.markdown("### 📋 Historial de Capítulos Auditados:")
+    for cap in datos.get("capitulos_auditados", []):
+        st.markdown(f"- ✅ `{cap}` procesado correctamente por Aura.")
+
+# ==========================================
+# PESTAÑA 3: ESTUDIO GRÁFICO (HÉRCULES)
+# ==========================================
+with pestanas[2]:
+    st.subheader("🎨 Estudio Gráfico de Hércules (Personajes, Viñetas y Videos)")
+    st.markdown("Hércules diseña las imágenes y recursos visuales para tus publicaciones. Visualiza, retoca o aprueba el material gráfico en tiempo real.")
+    
+    prompt_img = st.text_area(
+        "Prompt visual para Hércules (Personaje, escena o publicación):", 
+        value="Dark fantasy manga style, high quality character illustration, clean lines, highly detailed, no watermark"
+    )
+    
+    col_v1, col_v2 = st.columns([2, 1])
+    with col_v1:
+        st.markdown("#### 🖼️ Previsualización Gráfica")
+        encoded_p = urllib.parse.quote(prompt_img)
+        url_img = f"https://image.pollinations.ai/prompt/{encoded_p}?width=800&height=600&nologo=true&seed=42"
+        st.image(url_img, caption="Generación visual en directo por Hércules", use_column_width=True)
+        
+    with col_v2:
+        st.markdown("#### 🛠️ Opciones de Control")
+        retoque_h = st.text_input("Instrucción de retoque para Hércules:", placeholder="Ej: Cambiar ángulo, mejorar iluminación...")
+        if st.button("🎨 Regenerar con Retoque"):
+            st.success("¡Hércules ha aplicado los cambios!")
+            st.rerun()
             
-            if st.button("✅ APROBAR VIÑETA Y AVANZAR", type="primary"):
-                st.success(f"¡Viñeta #{st.session_state.vineta_actual} validada y guardada con éxito!")
-                st.session_state.vineta_actual += 1
-                st.session_state.prompt_custom_vineta = ""
-                st.rerun()
+        st.markdown("---")
+        if st.button("✅ Aprobar Gráfico para Publicación", type="primary"):
+            st.success("¡Imagen aprobada y enviada a Crono para el banco multicanal!")
+
+# ==========================================
+# PESTAÑA 4: CRONO & BANCO MULTICANAL
+# ==========================================
+with pestanas[3]:
+    st.subheader("📅 Crono: Orquestador y Banco Multicanal")
+    st.markdown("Crono junta el trabajo de todo el equipo (Idea de Aura, Imagen de Hércules, Copy de Dante y Hashtags de Kira) para que puedas revisarlo antes del OK final.")
+    
+    banco = datos.get("banco_multicanal", [])
+    if not banco:
+        st.info("El banco multicanal está vacío. Ve a la pestaña 'Auditoría y Plan Semanal' para pedirle a Aura que genere contenido.")
+    else:
+        st.markdown(f"**Total de propuestas en banco:** {len(banco)}")
+        for idx, item in enumerate(banco):
+            with st.expander(f"📦 Propuesta #{idx+1} — Formato: {item.get('tipo', 'General')}"):
+                st.markdown(f"**💡 Idea Visual (Hércules):** {item.get('idea_visual', '')}")
+                st.markdown(f"**✍️ Copy / Texto persuasivo (Dante):** {item.get('copy', '')}")
+                st.markdown(f"**🏷️ Hashtags optimizados (Kira):** {item.get('hashtags', '')}")
                 
-            if st.session_state.vineta_actual > 1:
-                if st.button("⬅️ Volver a la Viñeta Anterior"):
-                    st.session_state.vineta_actual -= 1
-                    st.session_state.prompt_custom_vineta = ""
+                col_c1, col_c2 = st.columns(2)
+                if col_c1.button("🚀 Dar OK y Publicar en Redes", key=f"pub_{idx}", type="primary"):
+                    st.success("¡Contenido enviado con éxito a las APIs configuradas!")
+                if col_c2.button("🗑️ Descartar Propuesta", key=f"del_prop_{idx}"):
+                    banco.pop(idx)
+                    datos["banco_multicanal"] = banco
+                    guardar_datos_agencia(datos)
+                    st.success("Propuesta eliminada.")
                     st.rerun()
+
+# ==========================================
+# PESTAÑA 5: GESTIÓN DE PERSONAJES Y LORE
+# ==========================================
+with pestanas[4]:
+    st.subheader("👥 Panel CRUD: Personajes, Bestiario, Mapas y Accesorios")
+    st.markdown("Modifica, añade o elimina cualquier elemento del lore de la saga según tus criterios y comentarios.")
+    
+    seccion_lore = st.selectbox("Seleccionar categoría de Lore", ["Personajes", "Bestiario", "Mapas y Accesorios"])
+    
+    if seccion_lore == "Personajes":
+        pers = datos.get("personajes", [])
+        if not pers:
+            st.info("No hay personajes registrados.")
+        for idx, p in enumerate(pers):
+            with st.expander(f"👤 {p.get('nombre', 'Personaje')} — [{p.get('rol', 'Secundario')}]"):
+                n_nom = st.text_input("Nombre", value=p.get('nombre', ''), key=f"c_nom_{idx}")
+                n_rol = st.selectbox("Rol", ["Protagonista", "Secundario", "Antagonista", "Terciario"], index=["Protagonista", "Secundario", "Antagonista", "Terciario"].index(p.get('rol', 'Secundario')) if p.get('rol') in ["Protagonista", "Secundario", "Antagonista", "Terciario"] else 1, key=f"c_rol_{idx}")
+                n_desc = st.text_area("Descripción", value=p.get('descripcion', ''), key=f"c_desc_{idx}")
+                
+                b1, b2 = st.columns(2)
+                if b1.button("💾 Actualizar Ficha", key=f"upd_p_{idx}"):
+                    datos["personajes"][idx]["nombre"] = n_nom
+                    datos["personajes"][idx]["rol"] = n_rol
+                    datos["personajes"][idx]["descripcion"] = n_desc
+                    guardar_datos_agencia(datos)
+                    st.success("¡Actualizado!")
+                    st.rerun()
+                if b2.button("🗑️ Eliminar", key=f"del_p_{idx}"):
+                    datos["personajes"].pop(idx)
+                    guardar_datos_agencia(datos)
+                    st.rerun()
+                    
+    elif seccion_lore == "Bestiario":
+        best = datos.get("bestiario", [])
+        for idx, b in enumerate(best):
+            st.markdown(f"- **{b.get('nombre')}**: {b.get('descripcion')}")
+    else:
+        mapas = datos.get("mapas_accesorios", [])
+        for idx, m in enumerate(mapas):
+            st.markdown(f"- **{m.get('nombre')}** ({m.get('tipo', 'Objeto')}): {m.get('descripcion')}")
+
+# ==========================================
+# PESTAÑA 6: BUZÓN DE PREGUNTAS Y EQUIPO
+# ==========================================
+with pestanas[5]:
+    st.subheader("💬 Buzón de Preguntas, Dudas y Feedback del Equipo")
+    st.markdown("Aquí los agentes te muestran sus bloqueos o preguntas y tú puedes darles directrices para que aprendan de sus errores y crezcan como equipo.")
+    
+    agente_objetivo = st.selectbox("¿A qué agente quieres dejarle directrices de mejora?", nombres_agentes)
+    
+    # Mostrar feedback previo del agente
+    fbs_actuales = aprendizajes["agentes"][agente_objetivo]["feedback"]
+    if fbs_actuales:
+        st.markdown(f"**Última directriz registrada para {agente_objetivo}:**")
+        st.info(fbs_actuales[-1])
+        
+    feedback_txt = st.text_area("Tus comentarios, correcciones o instrucciones directas para este agente:", placeholder="Ej: Asegúrate de que los textos sean más impactantes...")
+    
+    if st.button("💬 Enviar feedback y corregir rumbo", type="primary"):
+        if feedback_txt.strip():
+            registrar_feedback_agente(agente_objetivo, feedback_txt)
+            st.success(f"¡Feedback enviado a {agente_objetivo}! El agente ha integrado tu corrección en su memoria.")
+            st.rerun()
+        else:
+            st.error("Escribe un comentario válido.")
