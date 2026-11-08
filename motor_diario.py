@@ -2,46 +2,30 @@ import json
 import os
 import glob
 import google.generativeai as genai
-from motor_aprendizajes import cargar_aprendizajes, obtener_prompt_aprendido_para_hercules
 
-FICHERO_DATOS = "datos_saga.json"
+FICHERO_DATOS = "datos_agencia_completo.json"
 
 def inicializar_datos():
-    """Asegura la existencia del JSON con toda la estructura maestra inicial."""
     if not os.path.exists(FICHERO_DATOS):
         datos_iniciales = {
             "credenciales": {
-                "gemini": "",
-                "instagram": "",
-                "tiktok": "",
-                "twitter": ""
+                "instagram": {"app_id": "", "app_secret": "", "access_token": "", "instagram_account_id": ""},
+                "tiktok": {"client_key": "", "client_secret": "", "access_token": ""},
+                "twitter": {"api_key": "", "api_secret": "", "access_token": "", "access_secret": ""},
+                "gemini": {"api_key": ""}
             },
             "personajes": [
-                {
-                    "nombre": "Hugo",
-                    "rol": "Protagonista",
-                    "edad": "16",
-                    "descripcion": "Joven delgado, alto, de pelo negro y ojos azul celeste, protagonista de la saga.",
-                    "estado": "Activo",
-                    "notas": "Mantener siempre el diseño coherente en todas las ilustraciones."
-                },
-                {
-                    "nombre": "Esther",
-                    "rol": "Protagonista",
-                    "edad": "4",
-                    "descripcion": "Niña pequeña rubia que viaja en el avión con su madre y presencia el ataque de los seres oscuros.",
-                    "estado": "Activo",
-                    "notas": "Cuidar estrictamente que su aspecto sea de una niña infantil de 4 años."
-                }
+                {"nombre": "Hugo", "rol": "Protagonista", "edad": "16", "descripcion": "Joven delgado, alto, de pelo negro y ojos azul celeste.", "estado": "Activo", "notas": ""},
+                {"nombre": "Esther", "rol": "Protagonista", "edad": "4", "descripcion": "Niña pequeña rubia que viaja en avión y presencia el ataque.", "estado": "Activo", "notas": ""}
             ],
+            "bestiario": [],
+            "mapas_accesorios": [],
             "capitulos_auditados": [],
-            "banco_multicanal": [],
-            "manga_progreso": {}
+            "banco_multicanal": []
         }
-        guardar_datos_saga(datos_iniciales)
+        guardar_datos_agencia(datos_iniciales)
 
-def cargar_datos_saga():
-    """Carga los datos de la saga asegurando manejo de excepciones y resiliencia."""
+def cargar_datos_agencia():
     inicializar_datos()
     try:
         with open(FICHERO_DATOS, "r", encoding="utf-8") as f:
@@ -51,100 +35,91 @@ def cargar_datos_saga():
         with open(FICHERO_DATOS, "r", encoding="utf-8") as f:
             return json.load(f)
 
-def guardar_datos_saga(datos):
-    """Guarda los datos de la saga en el archivo JSON maestro."""
+def guardar_datos_agencia(datos):
     with open(FICHERO_DATOS, "w", encoding="utf-8") as f:
         json.dump(datos, f, ensure_ascii=False, indent=4)
 
 def listar_archivos_capitulos():
-    """
-    Escanea de forma robusta la carpeta de trabajo para localizar
-    todos los archivos de texto correspondientes a los 25 capítulos.
-    """
     ficheros = glob.glob("capitulos/*.txt") + glob.glob("*.txt")
-    cap_files = [
-        f for f in ficheros 
-        if "capitulo" in f.lower() or "cap" in f.lower() or "c_" in f.lower() or "episodio" in f.lower()
-    ]
+    cap_files = [f for f in ficheros if "capitulo" in f.lower() or "cap" in f.lower() or "c_" in f.lower()]
     return sorted(list(set(cap_files)))
 
-def aura_auditar_capitulo_real(fichero_path):
-    """
-    Aura lee de forma autónoma y profunda el archivo de texto real del capítulo mediante Gemini,
-    extrayendo los personajes, respetando jerarquías y actualizando la base de datos oficial.
-    """
-    datos = cargar_datos_saga()
-    api_key = datos.get("credenciales", {}).get("gemini", "")
+def aura_analizar_capitulo_y_generar_ideas(fichero_path, tipo_publicacion="Reel Semanal / Vídeo"):
+    datos = cargar_datos_agencia()
+    api_key = datos.get("credenciales", {}).get("gemini", {}).get("api_key", "")
     
     if not api_key:
-        return False, "⚠️ Error crítico: Introduce tu clave API de Google AI Studio (Gemini) en la pestaña 'Credenciales Aisladas'."
+        return False, "⚠️ Falta la clave API de Gemini en la pestaña de Credenciales."
     
     if not os.path.exists(fichero_path):
-        return False, f"⚠️ Error: No se encuentra el archivo físico '{fichero_path}' en el servidor."
+        return False, f"⚠️ No se encuentra el fichero {fichero_path}"
 
     try:
         with open(fichero_path, "r", encoding="utf-8") as f:
-            texto_capitulo = f.read()
+            texto = f.read()
     except Exception as e:
-        return False, f"Error al leer el archivo de texto: {str(e)}"
+        return False, f"Error al leer el archivo: {str(e)}"
 
     genai.configure(api_key=api_key)
     model = genai.GenerativeModel('gemini-1.5-flash')
 
     prompt = f"""
-    Actúa como AURA, la analista literaria de máxima precisión de la saga 'Los Cinco Reinos'.
-    Tu misión es realizar una auditoría exhaustiva del texto del capítulo proporcionado.
-    Extrae ABSOLUTAMENTE TODOS los personajes que aparezcan, tengan diálogo o sean mencionados de forma relevante.
-    
-    REGLAS ESTRICTAS DE EXTRACCIÓN:
-    1. Respeta los perfiles clave preexistentes (por ejemplo: Esther es una niña pequeña rubia de 4 años; Hugo es el protagonista de 16 años, etc.).
-    2. Clasifica a cada personaje estrictamente en una de estas cuatro jerarquías: 'Protagonista', 'Secundario', 'Antagonista' o 'Terciario'.
-    3. Proporciona una descripción física, de edad/tipo y de personalidad basada de manera fidedigna en el texto del capítulo.
+    Actúa como AURA, analista literaria de 'Los Cinco Reinos', coordinando a Hércules, Dante, Kira, Hermes, Vulcano y Crono.
+    Lee el texto y extrae en formato JSON puro:
+    1. "personajes": Lista de objetos con [nombre, rol (Protagonista/Secundario/Antagonista/Terciario), edad, descripcion].
+    2. "bestiario": Lista de criaturas [nombre, descripcion].
+    3. "mapas_accesorios": Lista de objetos/lugares [nombre, tipo, descripcion].
+    4. "propuesta_marketing": Objeto con el contenido solicitado de tipo '{tipo_publicacion}' que contenga:
+       - "tipo": "{tipo_publicacion}"
+       - "idea_visual": "Guion o concepto visual para Hércules (incluyendo generación de vídeos o imágenes de personajes)",
+       - "copy": "Texto o guion persuasivo redactado por Dante",
+       - "hashtags": "Hashtags optimizados por Kira para máximo alcance"
 
-    DEBES RESPONDER ÚNICAMENTE EN FORMATO JSON VÁLIDO (sin texto adicional fuera del JSON), con la siguiente estructura de lista de objetos:
-    [
-      {{
-        "nombre": "Nombre del personaje",
-        "rol": "Protagonista / Secundario / Antagonista / Terciario",
-        "edad": "Edad o clasificación (ej: 4 años, adulto, desconocido)",
-        "descripcion": "Descripción detallada extraída del texto",
-        "estado": "Activo",
-        "notas": ""
+    ESTRUCTURA JSON EXACTA:
+    {{
+      "personajes": [{{"nombre": "", "rol": "", "edad": "", "descripcion": ""}}],
+      "bestiario": [{{"nombre": "", "descripcion": ""}}],
+      "mapas_accesorios": [{{"nombre": "", "tipo": "", "descripcion": ""}}],
+      "propuesta_marketing": {{
+        "tipo": "{tipo_publicacion}",
+        "idea_visual": "",
+        "copy": "",
+        "hashtags": ""
       }}
-    ]
+    }}
 
-    TEXTO COMPLETO DEL CAPÍTULO A ANALIZAR:
-    {texto_capitulo}
+    Texto del capítulo:
+    {texto}
     """
 
     try:
         response = model.generate_content(prompt)
         text_resp = response.text.strip()
-        
         if text_resp.startswith("```json"):
             text_resp = text_resp[7:]
         if text_resp.endswith("```"):
             text_resp = text_resp[:-3]
             
-        nuevos_personajes = json.loads(text_resp.strip())
+        resultado = json.loads(text_resp.strip())
         
-        personajes_existentes = {p["nombre"].lower(): i for i, p in enumerate(datos["personajes"])}
-        
-        for p in nuevos_personajes:
-            nombre_lower = p["nombre"].lower()
-            if nombre_lower in personajes_existentes:
-                idx = personajes_existentes[nombre_lower]
-                datos["personajes"][idx]["descripcion"] = p["descripcion"]
-                datos["personajes"][idx]["rol"] = p["rol"]
-                if not datos["personajes"][idx].get("edad"):
-                    datos["personajes"][idx]["edad"] = p.get("edad", "")
-            else:
+        # Sincronización de base de datos
+        for p in resultado.get("personajes", []):
+            if not any(x["nombre"].lower() == p["nombre"].lower() for x in datos["personajes"]):
                 datos["personajes"].append(p)
+        for b in resultado.get("bestiario", []):
+            if not any(x["nombre"].lower() == b["nombre"].lower() for x in datos["bestiario"]):
+                datos["bestiario"].append(b)
+        for m in resultado.get("mapas_accesorios", []):
+            if not any(x["nombre"].lower() == m["nombre"].lower() for x in datos["mapas_accesorios"]):
+                datos["mapas_accesorios"].append(m)
                 
+        if "propuesta_marketing" in resultado:
+            datos["banco_multicanal"].append(resultado["propuesta_marketing"])
+            
         if fichero_path not in datos["capitulos_auditados"]:
             datos["capitulos_auditados"].append(fichero_path)
             
-        guardar_datos_saga(datos)
-        return True, f"✨ Aura ha auditado con éxito '{os.path.basename(fichero_path)}': Se han sincronizado los personajes en la base de datos."
+        guardar_datos_agencia(datos)
+        return True, "✨ Aura y el equipo han procesado el capítulo, actualizado el lore y generado el contenido en el banco multicanal de Crono."
     except Exception as e:
-        return False, f"⚠️ Error en la auditoría de Aura con Gemini: {str(e)}"
+        return False, f"Error en la IA: {str(e)}"

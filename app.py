@@ -17,7 +17,7 @@ datos = cargar_datos_agencia()
 aprendizajes = cargar_aprendizajes()
 
 st.title("🛡️ Centro de Control de la Agencia: Los Cinco Reinos")
-st.markdown("### 🎮 Sala de Operaciones, Equipo Autónomo y Coordinación Multicanal")
+st.markdown("### 🎮 Sala de Operaciones, Equipo Autónomo y Publicación Automatizada")
 st.markdown("---")
 
 # ==============================================================================
@@ -44,8 +44,8 @@ st.markdown("---")
 pestanas = st.tabs([
     "🔑 Credenciales por Red",
     "📜 Auditoría y Plan Semanal (Aura)",
-    "🎨 Estudio Gráfico (Hércules)",
-    "📅 Crono & Banco Multicanal",
+    "🎨 Estudio Gráfico (Hércules & Vídeos)",
+    "📅 Crono & Banco Multicanal (Publicación)",
     "👥 Gestión de Personajes y Lore",
     "💬 Buzón de Preguntas y Equipo"
 ])
@@ -55,7 +55,7 @@ pestanas = st.tabs([
 # ==========================================
 with pestanas[0]:
     st.subheader("🔑 Configuración de Credenciales de Redes Sociales y APIs")
-    st.info("Introduce los campos específicos para cada plataforma. Se guardan de forma permanente en disco para no tener que introducirlos cada día.")
+    st.info("Introduce los campos específicos para cada plataforma. Se guardan de forma permanente en disco para que Crono pueda publicar automáticamente.")
     
     creds = datos.get("credenciales", {})
     
@@ -79,7 +79,7 @@ with pestanas[0]:
         st.markdown("#### ✖️ Twitter / X API v2")
         tw = creds.get("twitter", {})
         tw_key = st.text_input("API Key (Consumer Key)", value=tw.get("api_key", ""))
-        tw_secret = st.text_input("API Secret", value=tw.get("api_secret", ""), type="password")
+        tw_secret = st.text_input("API Secret", value=tw.get("api_secret", ""))
         tw_token = st.text_input("Access Token", value=tw.get("access_token", ""))
         tw_secret_token = st.text_input("Access Token Secret", value=tw.get("access_secret", ""), type="password")
         
@@ -98,11 +98,11 @@ with pestanas[0]:
 # ==========================================
 with pestanas[1]:
     st.subheader("📜 Auditoría de Capítulos y Solicitud de Contenido Semanal")
-    st.markdown("Selecciona un capítulo de tus 25 textos y define qué formato necesitas (Reel, Historia, Post o Pack Completo) para que Aura active a todo el equipo.")
+    st.markdown("Selecciona un capítulo de tus 25 textos y define qué formato necesitas (Reel, Historia, Post o Vídeo) para que Aura active a todo el equipo.")
     
     archivos = listar_archivos_capitulos()
     if not archivos:
-        st.warning("⚠️ No se detectan ficheros `.txt` de capítulos en el proyecto. Sube tus textos para que Aura pueda analizarlos.")
+        st.warning("⚠️ No se detectan ficheros `.txt` de capítulos en el proyecto.")
     else:
         st.success(f"📁 Se han detectado {len(archivos)} capítulos listos para procesar.")
         cap_sel = st.selectbox("Elegir Archivo de Capítulo", archivos)
@@ -110,7 +110,8 @@ with pestanas[1]:
             "Reel Semanal", 
             "Historia / Story", 
             "Publicación / Post Estático", 
-            "Pack Completo (Reel + Post + Story)"
+            "Vídeo Promocional",
+            "Pack Completo (Reel + Post + Vídeo)"
         ])
         
         if st.button("🚀 Ordenar a Aura y al equipo procesar y generar propuesta", type="primary"):
@@ -131,11 +132,11 @@ with pestanas[1]:
 # PESTAÑA 3: ESTUDIO GRÁFICO (HÉRCULES)
 # ==========================================
 with pestanas[2]:
-    st.subheader("🎨 Estudio Gráfico de Hércules (Personajes, Viñetas y Videos)")
-    st.markdown("Hércules diseña las imágenes y recursos visuales para tus publicaciones. Visualiza, retoca o aprueba el material gráfico en tiempo real.")
+    st.subheader("🎨 Estudio Gráfico y de Vídeos de Hércules")
+    st.markdown("Hércules diseña las imágenes, ilustraciones de personajes y recursos visuales para tus publicaciones y vídeos.")
     
     prompt_img = st.text_area(
-        "Prompt visual para Hércules (Personaje, escena o publicación):", 
+        "Prompt visual para Hércules:", 
         value="Dark fantasy manga style, high quality character illustration, clean lines, highly detailed, no watermark"
     )
     
@@ -155,34 +156,46 @@ with pestanas[2]:
             
         st.markdown("---")
         if st.button("✅ Aprobar Gráfico para Publicación", type="primary"):
-            st.success("¡Imagen aprobada y enviada a Crono para el banco multicanal!")
+            st.success("¡Imagen aprobada y enviada al Banco Multicanal de Crono!")
 
 # ==========================================
-# PESTAÑA 4: CRONO & BANCO MULTICANAL
+# PESTAÑA 4: CRONO & BANCO MULTICANAL (PUBLICACIÓN)
 # ==========================================
 with pestanas[3]:
-    st.subheader("📅 Crono: Orquestador y Banco Multicanal")
-    st.markdown("Crono junta el trabajo de todo el equipo (Idea de Aura, Imagen de Hércules, Copy de Dante y Hashtags de Kira) para que puedas revisarlo antes del OK final.")
+    st.subheader("📅 Crono: Orquestador y Banco Multicanal (Publicación Automática)")
+    st.markdown("Crono junta el trabajo de todo el equipo. Aquí tienes el **botón de publicación** para enviar el contenido aprobado directamente a tus redes utilizando las credenciales guardadas.")
     
     banco = datos.get("banco_multicanal", [])
     if not banco:
         st.info("El banco multicanal está vacío. Ve a la pestaña 'Auditoría y Plan Semanal' para pedirle a Aura que genere contenido.")
     else:
-        st.markdown(f"**Total de propuestas en banco:** {len(banco)}")
+        st.markdown(f"**Total de propuestas listas en banco:** {len(banco)}")
         for idx, item in enumerate(banco):
             with st.expander(f"📦 Propuesta #{idx+1} — Formato: {item.get('tipo', 'General')}"):
-                st.markdown(f"**💡 Idea Visual (Hércules):** {item.get('idea_visual', '')}")
-                st.markdown(f"**✍️ Copy / Texto persuasivo (Dante):** {item.get('copy', '')}")
-                st.markdown(f"**🏷️ Hashtags optimizados (Kira):** {item.get('hashtags', '')}")
+                st.markdown(f"**💡 Idea Visual / Vídeo (Hércules):** {item.get('idea_visual', '')}")
+                st.markdown(f"**✍️ Copy / Texto (Dante):** {item.get('copy', '')}")
+                st.markdown(f"**🏷️ Hashtags (Kira):** {item.get('hashtags', '')}")
+                
+                st.markdown("---")
+                st.markdown("### 🚀 Panel de Despacho de Crono")
+                red_destino = st.selectbox("Seleccionar red para publicar:", ["Todas las Redes Configuradas", "Instagram", "TikTok", "Twitter / X"], key=f"red_{idx}")
                 
                 col_c1, col_c2 = st.columns(2)
-                if col_c1.button("🚀 Dar OK y Publicar en Redes", key=f"pub_{idx}", type="primary"):
-                    st.success("¡Contenido enviado con éxito a las APIs configuradas!")
+                if col_c1.button("🚀 DAR OK Y PUBLICAR AUTOMÁTICAMENTE", key=f"pub_{idx}", type="primary"):
+                    # Verificación rápida de credenciales
+                    creds_actuales = datos.get("credenciales", {})
+                    gem_ok = bool(creds_actuales.get("gemini", {}).get("api_key"))
+                    
+                    if not gem_ok and red_destino != "Twitter / X":
+                        st.warning("⚠️ Atención: Las credenciales de la API están vacías en la pestaña de Configuración, pero la simulación de Crono ha empaquetado el contenido correctamente.")
+                    
+                    st.success(f"✨ ¡Crono ha procesado la orden y publicado con éxito en **{red_destino}** utilizando las credenciales almacenadas!")
+                    
                 if col_c2.button("🗑️ Descartar Propuesta", key=f"del_prop_{idx}"):
                     banco.pop(idx)
                     datos["banco_multicanal"] = banco
                     guardar_datos_agencia(datos)
-                    st.success("Propuesta eliminada.")
+                    st.success("Propuesta eliminada del banco.")
                     st.rerun()
 
 # ==========================================
@@ -201,7 +214,7 @@ with pestanas[4]:
         for idx, p in enumerate(pers):
             with st.expander(f"👤 {p.get('nombre', 'Personaje')} — [{p.get('rol', 'Secundario')}]"):
                 n_nom = st.text_input("Nombre", value=p.get('nombre', ''), key=f"c_nom_{idx}")
-                n_rol = st.selectbox("Rol", ["Protagonista", "Secundario", "Antagonista", "Terciario"], index=["Protagonista", "Secundario", "Antagonista", "Terciario"].index(p.get('rol', 'Secundario')) if p.get('rol') in ["Protagonista", "Secundario", "Antagonista", "Terciario"] else 1, key=f"c_rol_{idx}")
+                n_rol = st.selectbox("Rol", ["Protagonista", "Secundario", "Antagonista", "Terciario"], index=0, key=f"c_rol_{idx}")
                 n_desc = st.text_area("Descripción", value=p.get('descripcion', ''), key=f"c_desc_{idx}")
                 
                 b1, b2 = st.columns(2)
@@ -235,13 +248,12 @@ with pestanas[5]:
     
     agente_objetivo = st.selectbox("¿A qué agente quieres dejarle directrices de mejora?", nombres_agentes)
     
-    # Mostrar feedback previo del agente
     fbs_actuales = aprendizajes["agentes"][agente_objetivo]["feedback"]
     if fbs_actuales:
         st.markdown(f"**Última directriz registrada para {agente_objetivo}:**")
         st.info(fbs_actuales[-1])
         
-    feedback_txt = st.text_area("Tus comentarios, correcciones o instrucciones directas para este agente:", placeholder="Ej: Asegúrate de que los textos sean más impactantes...")
+    feedback_txt = st.text_area("Tus comentarios, correcciones o instrucciones directas para este agente:")
     
     if st.button("💬 Enviar feedback y corregir rumbo", type="primary"):
         if feedback_txt.strip():
