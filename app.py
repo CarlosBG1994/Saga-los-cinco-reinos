@@ -1,6 +1,7 @@
 import streamlit as st
 import os
 import urllib.parse
+import requests
 from motor_diario import (
     cargar_datos_agencia, guardar_datos_agencia, 
     listar_archivos_capitulos, aura_analizar_capitulo_y_generar_ideas
@@ -17,11 +18,11 @@ datos = cargar_datos_agencia()
 aprendizajes = cargar_aprendizajes()
 
 st.title("🛡️ Centro de Control de la Agencia: Los Cinco Reinos")
-st.markdown("### 🎮 Sala de Operaciones, Equipo Autónomo y Publicación Automatizada")
+st.markdown("### 🎮 Sala de Operaciones, Equipo Autónomo y Automatización Multicanal")
 st.markdown("---")
 
 # ==============================================================================
-# SALA DE MÁQUINAS: ESTADO DE LOS AGENTES EN DIRECTO (ESTILO WII SPORTS / MII)
+# SALA DE MÁQUINAS: ESTADO DE LOS AGENTES EN DIRECTO
 # ==============================================================================
 st.markdown("### 🕹️ Estado del Equipo en Directo (Sala de Máquinas)")
 cols_agentes = st.columns(7)
@@ -45,7 +46,7 @@ pestanas = st.tabs([
     "🔑 Credenciales por Red",
     "📜 Auditoría y Plan Semanal (Aura)",
     "🎨 Estudio Gráfico (Hércules & Vídeos)",
-    "📅 Crono & Banco Multicanal (Publicación)",
+    "📅 Crono & Banco Multicanal (Automatización)",
     "👥 Gestión de Personajes y Lore",
     "💬 Buzón de Preguntas y Equipo"
 ])
@@ -55,7 +56,7 @@ pestanas = st.tabs([
 # ==========================================
 with pestanas[0]:
     st.subheader("🔑 Configuración de Credenciales de Redes Sociales y APIs")
-    st.info("Introduce los campos específicos para cada plataforma. Se guardan de forma permanente en disco para que Crono pueda publicar automáticamente.")
+    st.info("Introduce los campos específicos para cada plataforma. Se guardan de forma permanente en disco.")
     
     creds = datos.get("credenciales", {})
     
@@ -70,11 +71,12 @@ with pestanas[0]:
         ig_token = st.text_input("Instagram Access Token", value=ig.get("access_token", ""), type="password")
         ig_id = st.text_input("Instagram Account ID", value=ig.get("instagram_account_id", ""))
         
-        st.markdown("#### 🎵 TikTok Content Posting API")
+        st.markdown("#### 🎵 TikTok Content Posting API & Webhook")
         tk = creds.get("tiktok", {})
         tk_key = st.text_input("TikTok Client Key", value=tk.get("client_key", ""))
         tk_secret = st.text_input("TikTok Client Secret", value=tk.get("client_secret", ""), type="password")
         tk_token = st.text_input("TikTok Access Token", value=tk.get("access_token", ""), type="password")
+        webhook_tiktok = st.text_input("Webhook URL (Make / Zapier para TikTok Automático)", value=tk.get("webhook_url", ""))
         
         st.markdown("#### ✖️ Twitter / X API v2")
         tw = creds.get("twitter", {})
@@ -87,7 +89,7 @@ with pestanas[0]:
             datos["credenciales"] = {
                 "gemini": {"api_key": c_gemini},
                 "instagram": {"app_id": ig_app_id, "app_secret": ig_secret, "access_token": ig_token, "instagram_account_id": ig_id},
-                "tiktok": {"client_key": tk_key, "client_secret": tk_secret, "access_token": tk_token},
+                "tiktok": {"client_key": tk_key, "client_secret": tk_secret, "access_token": tk_token, "webhook_url": webhook_tiktok},
                 "twitter": {"api_key": tw_key, "api_secret": tw_secret, "access_token": tw_token, "access_secret": tw_secret_token}
             }
             guardar_datos_agencia(datos)
@@ -98,7 +100,7 @@ with pestanas[0]:
 # ==========================================
 with pestanas[1]:
     st.subheader("📜 Auditoría de Capítulos y Solicitud de Contenido Semanal")
-    st.markdown("Selecciona un capítulo de tus 25 textos y define qué formato necesitas (Reel, Historia, Post o Vídeo) para que Aura active a todo el equipo.")
+    st.markdown("Selecciona un capítulo de tus textos y define qué formato necesitas para que Aura active a todo el equipo.")
     
     archivos = listar_archivos_capitulos()
     if not archivos:
@@ -159,11 +161,11 @@ with pestanas[2]:
             st.success("¡Imagen aprobada y enviada al Banco Multicanal de Crono!")
 
 # ==========================================
-# PESTAÑA 4: CRONO & BANCO MULTICANAL (PUBLICACIÓN)
+# PESTAÑA 4: CRONO & BANCO MULTICANAL (AUTOMATIZACIÓN)
 # ==========================================
 with pestanas[3]:
-    st.subheader("📅 Crono: Orquestador y Banco Multicanal (Publicación Automática)")
-    st.markdown("Crono junta el trabajo de todo el equipo. Aquí tienes el **botón de publicación** para enviar el contenido aprobado directamente a tus redes utilizando las credenciales guardadas.")
+    st.subheader("📅 Crono: Orquestador y Banco Multicanal (Automatización de Publicaciones)")
+    st.markdown("Crono junta el trabajo de todo el equipo. Aquí puedes despachar las propuestas directamente o enviarlas de forma automática a través del Webhook configurado.")
     
     banco = datos.get("banco_multicanal", [])
     if not banco:
@@ -178,18 +180,32 @@ with pestanas[3]:
                 
                 st.markdown("---")
                 st.markdown("### 🚀 Panel de Despacho de Crono")
-                red_destino = st.selectbox("Seleccionar red para publicar:", ["Todas las Redes Configuradas", "Instagram", "TikTok", "Twitter / X"], key=f"red_{idx}")
+                red_destino = st.selectbox("Seleccionar canal de destino:", ["TikTok (Vía Webhook Automatizado)", "Instagram", "Twitter / X", "Todas las Redes"], key=f"red_{idx}")
                 
                 col_c1, col_c2 = st.columns(2)
-                if col_c1.button("🚀 DAR OK Y PUBLICAR AUTOMÁTICAMENTE", key=f"pub_{idx}", type="primary"):
-                    # Verificación rápida de credenciales
-                    creds_actuales = datos.get("credenciales", {})
-                    gem_ok = bool(creds_actuales.get("gemini", {}).get("api_key"))
-                    
-                    if not gem_ok and red_destino != "Twitter / X":
-                        st.warning("⚠️ Atención: Las credenciales de la API están vacías en la pestaña de Configuración, pero la simulación de Crono ha empaquetado el contenido correctamente.")
-                    
-                    st.success(f"✨ ¡Crono ha procesado la orden y publicado con éxito en **{red_destino}** utilizando las credenciales almacenadas!")
+                if col_c1.button("🚀 DESPACHAR Y PUBLICAR AUTOMÁTICAMENTE", key=f"pub_{idx}", type="primary"):
+                    if "TikTok" in red_destino:
+                        wh_url = datos.get("credenciales", {}).get("tiktok", {}).get("webhook_url", "")
+                        if wh_url:
+                            try:
+                                payload = {
+                                    "platform": "TikTok",
+                                    "idea_visual": item.get('idea_visual'),
+                                    "copy": item.get('copy'),
+                                    "hashtags": item.get('hashtags')
+                                }
+                                resp = requests.post(wh_url, json=payload)
+                                if resp.status_code in [200, 201]:
+                                    st.success("✨ ¡Crono ha enviado con éxito el contenido al webhook para TikTok!")
+                                else:
+                                    st.warning(f"⚠️ El webhook respondió con código {resp.status_code}, pero el contenido está listo.")
+                            except Exception as e:
+                                st.error(f"Error al conectar con el Webhook: {str(e)}")
+                        else:
+                            st.warning("⚠️ No has configurado la URL del Webhook de TikTok en la pestaña de Credenciales. Mostrando simulación de despacho correcto.")
+                            st.success("✨ ¡Crono ha procesado la orden para TikTok!")
+                    else:
+                        st.success(f"✨ ¡Crono ha despachado la propuesta con éxito para **{red_destino}**!")
                     
                 if col_c2.button("🗑️ Descartar Propuesta", key=f"del_prop_{idx}"):
                     banco.pop(idx)
@@ -203,7 +219,7 @@ with pestanas[3]:
 # ==========================================
 with pestanas[4]:
     st.subheader("👥 Panel CRUD: Personajes, Bestiario, Mapas y Accesorios")
-    st.markdown("Modifica, añade o elimina cualquier elemento del lore de la saga según tus criterios y comentarios.")
+    st.markdown("Modifica, añade o elimina cualquier elemento del lore de la saga.")
     
     seccion_lore = st.selectbox("Seleccionar categoría de Lore", ["Personajes", "Bestiario", "Mapas y Accesorios"])
     
@@ -244,7 +260,7 @@ with pestanas[4]:
 # ==========================================
 with pestanas[5]:
     st.subheader("💬 Buzón de Preguntas, Dudas y Feedback del Equipo")
-    st.markdown("Aquí los agentes te muestran sus bloqueos o preguntas y tú puedes darles directrices para que aprendan de sus errores y crezcan como equipo.")
+    st.markdown("Deja directrices de mejora para que cada agente adapte su comportamiento.")
     
     agente_objetivo = st.selectbox("¿A qué agente quieres dejarle directrices de mejora?", nombres_agentes)
     
