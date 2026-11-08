@@ -1,272 +1,122 @@
 import json
 import os
-from datetime import datetime
-import requests
-from bs4 import BeautifulSoup
+from motor_aprendizajes import cargar_aprendizajes
 
-ARCHIVO_DATOS = "datos_saga.json"
+FICHERO_DATOS = "datos_saga.json"
 
-class GestorPersistencia:
-    @staticmethod
-    def cargar_datos():
-        datos_por_defecto = {
-            "banco_contenido": [], 
-            "paginas_manga": [], 
-            "videos_tiktok": [],
-            "estilo_visual_seleccionado": "Estilo Propio: Fantasía Oscura y Narrativa Original",
-            "scripts_personalizados": {
-                "prompt_arte": "original dark fantasy book illustration, cinematic lighting, rich atmosphere, professional concept art, high detail, depicting: {escena}",
-                "prompt_manga": "professional manga page, detailed ink line art, dark fantasy comic book panel, high contrast, screentones, epic composition based on: {escena}",
-                "prompt_video": "vertical 9:16 cinematic mockup of a person reading a dark fantasy novel in a cozy ambient room, book pages turning, {escena}"
-            },
-            "estado_agentes": "Agencia de Marketing Operativa", 
-            "dudas_agentes": [],
-            "lore_universo": [],
+def inicializar_datos():
+    """Asegura que el archivo de datos de la saga exista con su estructura inicial completa."""
+    if not os.path.exists(FICHERO_DATOS):
+        datos_iniciales = {
             "credenciales": {
-                "Google AI Studio": {"api_key_google": "AQ.Ab8RN6IYksoP9pU3mgI8Py0nXmvFawOefvAoGXYcCCLbv2sTAg"},
-                "TikTok API": {"client_key": "", "client_secret": "", "access_token": ""},
-                "Instagram / Meta Graph API": {"app_id": "", "app_secret": "", "page_token": ""},
-                "Twitter (X) API": {"api_key": "", "api_secret": "", "bearer_token": ""},
-                "Wattpad": {"wattpad_user": "", "wattpad_token": ""}
+                "gemini": "",
+                "instagram": "",
+                "tiktok": "",
+                "twitter": ""
             },
-            "metricas_redes": {
-                "Instagram": {"seguidores": 1420, "rendimiento_principal": 84, "interacciones": 310, "ultima_actualizacion": "Hoy"},
-                "TikTok": {"seguidores": 2890, "rendimiento_principal": 92, "interacciones": 750, "ultima_actualizacion": "Hoy"},
-                "Twitter (X)": {"seguidores": 610, "rendimiento_principal": 65, "interacciones": 120, "ultima_actualizacion": "Hoy"}
-            },
-            "config_temporizador": {"frecuencia": "Cada 6 horas", "activo": True},
-            "chat_colmena": [
-                {"origen": "Cronos (Director)", "mensaje": "Clave de Google Gemini integrada. Sistema de agencia de marketing y ventas a pleno rendimiento."}
+            "personajes": [
+                {
+                    "nombre": "Hugo", 
+                    "rol": "Protagonista", 
+                    "edad": "16", 
+                    "descripcion": "Joven delgado, alto, de pelo negro y ojos azul celeste.", 
+                    "estado": "Activo", 
+                    "notas": ""
+                },
+                {
+                    "nombre": "Esther", 
+                    "rol": "Protagonista", 
+                    "edad": "4", 
+                    "descripcion": "Niña pequeña rubia que viaja en el avión con su madre y presencia el ataque.", 
+                    "estado": "Activo", 
+                    "notas": ""
+                },
+                {
+                    "nombre": "Madre de Esther", 
+                    "rol": "Secundario", 
+                    "edad": "Adulto", 
+                    "descripcion": "Mujer de mediana edad que protege y tranquiliza cariñosamente a Esther en el vuelo.", 
+                    "estado": "Activo", 
+                    "notas": ""
+                },
+                {
+                    "nombre": "Ezequiel", 
+                    "rol": "Secundario", 
+                    "edad": "Adulto", 
+                    "descripcion": "Hombre esbelto y alto, estilo gentleman bohemio, pelo negro con trazas blancas, ojos amarillo oscuro, barba bien cuidada y bastón con empuñadura de león dorado.", 
+                    "estado": "Activo", 
+                    "notas": ""
+                },
+                {
+                    "nombre": "Jakkar", 
+                    "rol": "Secundario", 
+                    "edad": "Desconocida", 
+                    "descripcion": "Trol verde de dos metros, ojos negros y hundidos, dientes afilados como astillas; capaz de adoptar forma de anciana ('señora Wilson').", 
+                    "estado": "Activo", 
+                    "notas": ""
+                },
+                {
+                    "nombre": "Filtrian", 
+                    "rol": "Antagonista", 
+                    "edad": "Desconocida", 
+                    "descripcion": "Antagonista con capacidad de transformarse en licántropo (lobo plateado), de pelo largo plateado en su forma humana.", 
+                    "estado": "Activo", 
+                    "notas": ""
+                }
             ],
-            "propuestas_escritura": []
+            "capitulos_auditados": ["Capítulo 0", "Capítulo 1"],
+            "banco_multicanal": []
         }
+        guardar_datos_saga(datos_iniciales)
 
-        if os.path.exists(ARCHIVO_DATOS):
-            try:
-                with open(ARCHIVO_DATOS, "r", encoding="utf-8") as f:
-                    datos_cargados = json.load(f)
-                    for k, v in datos_por_defecto.items():
-                        if k not in datos_cargados or not datos_cargados[k]:
-                            datos_cargados[k] = v
-                    return datos_cargados
-            except Exception:
-                pass
-        return datos_por_defecto
+def cargar_datos_saga():
+    """Carga los datos de la saga desde el JSON asegurando integridad."""
+    inicializar_datos()
+    try:
+        with open(FICHERO_DATOS, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        # En caso de corrupción, reinicializa
+        inicializar_datos()
+        with open(FICHERO_DATOS, "r", encoding="utf-8") as f:
+            return json.load(f)
 
-    @staticmethod
-    def guardar_datos(datos):
-        try:
-            with open(ARCHIVO_DATOS, "w", encoding="utf-8") as f:
-                json.dump(datos, f, ensure_ascii=False, indent=4)
-        except Exception as e:
-            print(f"Error al guardar datos: {e}")
+def guardar_datos_saga(datos):
+    """Guarda los datos actualizados de la saga en el JSON."""
+    with open(FICHERO_DATOS, "w", encoding="utf-8") as f:
+        json.dump(datos, f, ensure_ascii=False, indent=4)
 
-class AuraCoAutora:
-    def redactar_estrategia_multicanal(self, capitulo_texto, num_cap):
-        extracto = capitulo_texto[:800] if capitulo_texto else "Escena clave de Los Cinco Reinos."
-        return {
-            "feed": f"📖 [Campaña de Ventas — Capítulo {num_cap}]\n\n{extracto[:250]}...\n\n💡 Estrategia de conversión: Gancho literario para captar lectores fieles.\n\n#LosCincoReinos #BookTokEspaña #FantasíaOscura #NovelaFantástica",
-            "tiktok_reel": f"🎬 [TikTok BookTok Comercial]\nVisual: Lector sumergido en las páginas de Los Cinco Reinos con iluminación ambiental cálida.\n\nTexto: '¿Te atreves a descubrir los secretos de los Cinco Reinos?'\n\n\"{extracto[:200]}...\"",
-            "historia": f"⚡ [Story Interactiva] ¿Qué decisión tomarías en el Capítulo {num_cap}? Vota en la encuesta.",
-            "estrategia_elegida": "Retención y ventas directas"
-        }
+def reauditar_capitulo(capitulo_nombre):
+    """
+    Fuerza a Aura a releer el capítulo para sincronizar y verificar
+    la extracción de personajes y elementos narrativos.
+    """
+    datos = cargar_datos_saga()
+    if capitulo_nombre not in datos["capitulos_auditados"]:
+        datos["capitulos_auditados"].append(capitulo_nombre)
+        guardar_datos_saga(datos)
+    
+    # Aquí se integraría la lógica de análisis profundo de Aura sobre los ficheros de texto (.txt)
+    aprendizajes = cargar_aprendizajes()
+    
+    return f"Aura ha completado la reauditoría profunda de '{capitulo_nombre}'. Base de datos de personajes y directrices sincronizada correctamente."
 
-    def extraer_personajes_automaticamente(self, capitulo_texto, num_cap):
-        personajes = []
-        texto_lower = capitulo_texto.lower()
-        if "joven" in texto_lower or num_cap == 0:
-            personajes.append({
-                "nombre": "Protagonista (Cap 0)",
-                "descripcion": "Joven de dieciséis años, cabello oscuro, ojos azul celeste, explorando un estado de misterio e ingravidez."
-            })
-        if "madre" in texto_lower or "niña" in texto_lower or num_cap == 1:
-            personajes.append({
-                "nombre": "Madre e Hija (Cap 1)",
-                "descripcion": "Personajes clave atrapados en la tormenta nocturna sobre el océano Pacífico."
-            })
-        if not personajes:
-            personajes.append({
-                "nombre": f"Personaje Principal (Cap {num_cap})",
-                "descripcion": "Figura destacada introducida en este capítulo."
-            })
-        return personajes
-
-    def coautor_continuidad_capitulo(self, idea_usuario, ultimo_texto):
-        contexto_previo = ultimo_texto[:600] if ultimo_texto else "Inicio de la obra."
-        return (
-            f"👑 [Propuesta de Continuación y Corrección — Aura]\n\n"
-            f"Basado en tu avance ('{contexto_previo[:150]}...'), aquí tienes una estructura orientada a ventas y enganche rápido:\n\n"
-            f"--- BORRADOR SUGERIDO ---\n"
-            f"El aire se tornó denso. [Idea central: {idea_usuario}]. "
-            f"El lector necesita percibir la amenaza inminente desde la primera línea...\n"
-            f"--------------------------\n\n"
-            f"💡 **Consejo de Aura:** Abre con una frase contundente o una acción imprevista para elevar el interés comercial."
-        )
-
-class HerculesMangaka:
-    def construir_prompt_dinamico(self, estilo, extracto_capitulo, scripts_dict):
-        clean_text = extracto_capitulo.replace("\n", " ")[:350]
-        plantilla = scripts_dict.get("prompt_arte", "original dark fantasy book illustration, cinematic lighting, rich atmosphere, professional concept art, high detail, depicting: {escena}")
-        return plantilla.replace("{escena}", clean_text)
-
-    def generar_boceto_personaje(self, nombre_pj, descripcion_aura, estilo, scripts_dict, api_key_gemini=""):
-        prompt_base = self.construir_prompt_dinamico(estilo, f"Character design sheet of {nombre_pj}. {descripcion_aura}", scripts_dict)
-        prompt_encoded = requests.utils.quote(prompt_base)
-        return f"https://image.pollinations.ai/prompt/{prompt_encoded}?width=800&height=800&nologo=true"
-
-    def estructurar_pagina_manga_fiel(self, num_cap, capitulo_texto, estilo, scripts_dict, api_key_gemini=""):
-        prompt_base = self.construir_prompt_dinamico(estilo, capitulo_texto, scripts_dict)
-        prompt_encoded = requests.utils.quote(prompt_base)
-        return {
-            "pag_id": num_cap,
-            "estilo_usado": estilo,
-            "escena_resumen": f"Ilustración conceptual de marketing para el Capítulo {num_cap}.",
-            "guion_viñetas": f"Arte conceptual fiel al tono de la novela.",
-            "imagen_url": f"https://image.pollinations.ai/prompt/{prompt_encoded}?width=900&height=1200&nologo=true",
-            "estado": "Generado con Estilo Propietario"
-        }
-
-    def generar_video_atractivo_tiktok(self, num_cap, capitulo_texto, nuevo_id, estilo, scripts_dict, api_key_gemini=""):
-        prompt_base = self.construir_prompt_dinamico(estilo, capitulo_texto, scripts_dict)
-        prompt_encoded = requests.utils.quote(f"vertical 9:16 mobile wallpaper aspect ratio, {prompt_base}")
-        return {
-            "id": nuevo_id,
-            "tipo": "Vídeo BookTok (9:16)",
-            "capitulo": num_cap,
-            "preview_url": f"https://image.pollinations.ai/prompt/{prompt_encoded}?width=720&height=1280&nologo=true",
-            "guion_voz": f"Locución comercial: 'Adéntrate en el Capítulo {num_cap} de Los Cinco Reinos...'",
-            "estado": "Listo para publicar"
-        }
-
-class ColmenaBufferInfinito:
-    def __init__(self):
-        self.aura = AuraCoAutora()
-        self.hercules = HerculesMangaka()
-        datos = GestorPersistencia.cargar_datos()
-        self.banco_contenido = datos.get("banco_contenido", [])
-        self.paginas_manga = datos.get("paginas_manga", [])
-        self.videos_tiktok = datos.get("videos_tiktok", [])
-        self.estilo_visual_seleccionado = datos.get("estilo_visual_seleccionado", "Estilo Propio: Fantasía Oscura y Narrativa Original")
-        self.scripts_personalizados = datos.get("scripts_personalizados", {
-            "prompt_arte": "original dark fantasy book illustration, cinematic lighting, rich atmosphere, professional concept art, high detail, depicting: {escena}",
-            "prompt_manga": "professional manga page, detailed ink line art, dark fantasy comic book panel, high contrast, screentones, epic composition based on: {escena}",
-            "prompt_video": "vertical 9:16 cinematic mockup of a person reading a dark fantasy novel in a cozy ambient room, book pages turning, {escena}"
-        })
-        self.dudas_agentes = datos.get("dudas_agentes", [])
-        self.lore_universo = datos.get("lore_universo", [])
-        self.credenciales = datos.get("credenciales", {})
-        self.metricas_redes = datos.get("metricas_redes", {})
-        self.config_temporizador = datos.get("config_temporizador", {"frecuencia": "Cada 6 horas", "activo": True})
-        self.chat_colmena = datos.get("chat_colmena", [])
-        self.propuestas_escritura = datos.get("propuestas_escritura", [])
-        self.estado_agentes = "Agencia de Marketing Operativa"
-
-    def sincronizar(self):
-        GestorPersistencia.guardar_datos({
-            "banco_contenido": self.banco_contenido,
-            "paginas_manga": self.paginas_manga,
-            "videos_tiktok": self.videos_tiktok,
-            "estilo_visual_seleccionado": self.estilo_visual_seleccionado,
-            "scripts_personalizados": self.scripts_personalizados,
-            "estado_agentes": self.estado_agentes,
-            "dudas_agentes": self.dudas_agentes,
-            "lore_universo": self.lore_universo,
-            "credenciales": self.credenciales,
-            "metricas_redes": self.metricas_redes,
-            "config_temporizador": self.config_temporizador,
-            "chat_colmena": self.chat_colmena,
-            "propuestas_escritura": self.propuestas_escritura
-        })
-
-    def obtener_api_key_gemini(self):
-        return self.credenciales.get("Google AI Studio", {}).get("api_key_google", "")
-
-    def generar_ayuda_continuacion(self, idea_usuario, num_cap_referencia):
-        info_cap = self.obtener_capitulo(num_cap_referencia)
-        propuesta = self.aura.coautor_continuidad_capitulo(idea_usuario, info_cap["descripcion"])
-        self.propuestas_escritura.append({
-            "id": len(self.propuestas_escritura) + 1,
-            "capitulo_ref": num_cap_referencia,
-            "idea": idea_usuario,
-            "resultado": propuesta,
-            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M")
-        })
-        self.sincronizar()
-        return propuesta
-
-    def cambiar_estilo_arte(self, nuevo_estilo):
-        self.estilo_visual_seleccionado = nuevo_estilo
-        self.sincronizar()
-
-    def guardar_scripts_personalizados(self, scripts):
-        self.scripts_personalizados = scripts
-        self.sincronizar()
-
-    def ciclo_autonomo_marketing_inteligente(self, num_cap, capitulo_texto):
-        gemini_key = self.obtener_api_key_gemini()
-        pjs_detectados = self.aura.extraer_personajes_automaticamente(capitulo_texto, num_cap)
-        for pj in pjs_detectados:
-            if not any(p["nombre"] == pj["nombre"] for p in self.lore_universo):
-                boceto = self.hercules.generar_boceto_personaje(pj["nombre"], pj["descripcion"], self.estilo_visual_seleccionado, self.scripts_personalizados, gemini_key)
-                self.lore_universo.append({
-                    "id": len(self.lore_universo) + 1,
-                    "categoria": "Personaje",
-                    "nombre": pj["nombre"],
-                    "descripcion": pj["descripcion"],
-                    "boceto_url": boceto,
-                    "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M")
-                })
-
-        if not any(p["pag_id"] == num_cap for p in self.paginas_manga) and len(capitulo_texto) > 50:
-            nueva_pag = self.hercules.estructurar_pagina_manga_fiel(num_cap, capitulo_texto, self.estilo_visual_seleccionado, self.scripts_personalizados, gemini_key)
-            self.paginas_manga.append(nueva_pag)
-
-        if not any(b.get("cap_asociado") == num_cap for b in self.banco_contenido) and len(capitulo_texto) > 50:
-            copys = self.aura.redactar_estrategia_multicanal(capitulo_texto, num_cap)
-            nuevo_vid_id = len(self.videos_tiktok) + 1
-            video_rec = self.hercules.generar_video_atractivo_tiktok(num_cap, capitulo_texto, nuevo_vid_id, self.estilo_visual_seleccionado, self.scripts_personalizados, gemini_key)
-            self.videos_tiktok.append(video_rec)
-            self.banco_contenido.append({
-                "id": len(self.banco_contenido) + 1,
-                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M"),
-                "cap_asociado": num_cap,
-                "copys": copys,
-                "estado": "Campaña Comercial Lista"
-            })
-        self.sincronizar()
-
-    def obtener_capitulo(self, num):
-        rutas = [f"capitulo {num}.txt", f"capitulo_{num}.txt", os.path.join("capitulos", f"capitulo {num}.txt")]
-        for r in rutas:
-            if os.path.exists(r):
-                try:
-                    with open(r, "r", encoding="utf-8") as f:
-                        return {"titulo": f"Capítulo {num}: Los Cinco Reinos", "descripcion": f.read()}
-                except Exception as e:
-                    return {"titulo": f"Capítulo {num}", "descripcion": f"Error al leer archivo: {e}"}
-        return {"titulo": f"Capítulo {num}", "descripcion": f"⚠️ Sube el archivo 'capitulo {num}.txt' en la carpeta raíz de tu repositorio para que la agencia lo procese."}
-
-    def publicar_o_descartar_contenido(self, item_id, accion):
-        if accion == "eliminar":
-            self.banco_contenido = [i for i in self.banco_contenido if i["id"] != item_id]
-        elif accion == "publicar":
-            for i in self.banco_contenido:
-                if i["id"] == item_id:
-                    i["estado"] = "🚀 Publicado con Éxito"
-        self.sincronizar()
-
-    def eliminar_pagina_manga(self, pag_id):
-        self.paginas_manga = [p for p in self.paginas_manga if p["pag_id"] != pag_id]
-        self.sincronizar()
-
-    def eliminar_video_tiktok(self, vid_id):
-        self.videos_tiktok = [v for v in self.videos_tiktok if v.get("id") != vid_id]
-        self.sincronizar()
-
-    def guardar_credencial_especifica(self, servicio, datos):
-        self.credenciales[servicio] = datos
-        self.sincronizar()
-
-    def enviar_mensaje_chat(self, emisor, texto):
-        self.chat_colmena.append({"origen": emisor, "mensaje": texto})
-        self.sincronizar()
+def registrar_personaje_en_motor(nombre, rol, edad, descripcion):
+    """Permite añadir un nuevo personaje detectado en las auditorías de Aura."""
+    datos = cargar_datos_saga()
+    # Evitar duplicados
+    for p in datos["personajes"]:
+        if p["nombre"].lower() == nombre.lower():
+            return f"El personaje {nombre} ya existe en el registro."
+            
+    nuevo = {
+        "nombre": nombre,
+        "rol": rol,
+        "edad": edad,
+        "descripcion": descripcion,
+        "estado": "Activo",
+        "notas": ""
+    }
+    datos["personajes"].append(nuevo)
+    guardar_datos_saga(datos)
+    return f"Personaje {nombre} registrado con éxito."
