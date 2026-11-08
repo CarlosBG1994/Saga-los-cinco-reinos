@@ -17,12 +17,6 @@ def guardar_aprendizajes(datos):
         json.dump(datos, f, ensure_ascii=False, indent=4)
 
 def registrar_feedback_hercules(tipo, clave, nota):
-    """
-    Registra una corrección o preferencia para que Hércules la aprenda.
-    tipo: 'estilo', 'personaje' o 'manga'
-    clave: identificador (ej. 'Ezequiel', 'general', 'viñetas')
-    nota: la instrucción de mejora dada por el usuario.
-    """
     datos = cargar_aprendizajes()
     if tipo == 'estilo':
         datos["preferencias_estilo"].append(nota)
