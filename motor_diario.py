@@ -35,7 +35,7 @@ class MotorDiario:
                 return f"Error al leer el archivo {nombre_archivo}: {e}"
         return f"Aviso: El archivo '{nombre_archivo}' no se encuentra en el directorio raíz."
 
-    def sincronizar_ Hercules_lore(self, personaje_activo):
+    def sincronizar_hercules_lore(self, personaje_activo):
         """Prepara el paquete de directrices visuales para Hércules basado en el lore."""
         info = self.lore_personajes.get(personaje_activo, {"descripcion": "Personaje secundario de Los Cinco Reinos."})
         directriz = (
@@ -48,9 +48,8 @@ class MotorDiario:
     def procesar_agentes_autonomos(self, capitulo_sel, personaje_sel, formato_sel):
         """Simula la ejecución coordinada de toda la oficina de agentes."""
         texto = self.leer_capitulo(capitulo_sel)
-        directriz_hercules = self.sincronizar_ Hercules_lore(personaje_sel) if hasattr(self, 'sincronizar_ Hercules_lore') else ""
+        directriz_hercules = self.sincronizar_hercules_lore(personaje_sel)
         
-        # Simulación de procesamiento estructurado
         resultado = {
             "estado": "Éxito",
             "aura_analisis": f"Extracción completada de {capitulo_sel}. Se han detectado ganchos de misterio y tensiones en la frontera.",
