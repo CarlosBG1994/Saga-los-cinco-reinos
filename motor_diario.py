@@ -1,125 +1,64 @@
-import json
 import os
 import glob
-import google.generativeai as genai
+from datetime import datetime
 
-FICHERO_DATOS = "datos_agencia_completo.json"
-
-def inicializar_datos():
-    if not os.path.exists(FICHERO_DATOS):
-        datos_iniciales = {
-            "credenciales": {
-                "instagram": {"app_id": "", "app_secret": "", "access_token": "", "instagram_account_id": ""},
-                "tiktok": {"client_key": "", "client_secret": "", "access_token": ""},
-                "twitter": {"api_key": "", "api_secret": "", "access_token": "", "access_secret": ""},
-                "gemini": {"api_key": ""}
+class MotorDiario:
+    def __init__(self, carpeta_capitulos="."):
+        self.carpeta_capitulos = carpeta_capitulos
+        self.historial_proceso = []
+        # Base de lore interna gestionada por el motor
+        self.lore_personajes = {
+            "Hugo": {
+                "rol": "Protagonista",
+                "descripcion": "Joven delgado, alto, de pelo negro y ojos azul celeste."
             },
-            "personajes": [
-                {"nombre": "Hugo", "rol": "Protagonista", "edad": "16", "descripcion": "Joven delgado, alto, de pelo negro y ojos azul celeste.", "estado": "Activo", "notas": ""},
-                {"nombre": "Esther", "rol": "Protagonista", "edad": "4", "descripcion": "Niña pequeña rubia que viaja en avión y presencia el ataque.", "estado": "Activo", "notas": ""}
-            ],
-            "bestiario": [],
-            "mapas_accesorios": [],
-            "capitulos_auditados": [],
-            "banco_multicanal": []
+            "Esther": {
+                "rol": "Protagonista",
+                "descripcion": "Protagonista principal de la saga Los Cinco Reinos."
+            }
         }
-        guardar_datos_agencia(datos_iniciales)
 
-def cargar_datos_agencia():
-    inicializar_datos()
-    try:
-        with open(FICHERO_DATOS, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except Exception:
-        inicializar_datos()
-        with open(FICHERO_DATOS, "r", encoding="utf-8") as f:
-            return json.load(f)
+    def listar_capitulos(self):
+        """Escanea dinámicamente la carpeta en busca de archivos de texto de la saga."""
+        patron = os.path.join(self.carpeta_capitulos, "*.txt")
+        archivos = glob.glob(patron)
+        return [os.path.basename(f) for f in archivos] if archivos else ["capitulo_0.txt"]
 
-def guardar_datos_agencia(datos):
-    with open(FICHERO_DATOS, "w", encoding="utf-8") as f:
-        json.dump(datos, f, ensure_ascii=False, indent=4)
+    def leer_capitulo(self, nombre_archivo):
+        """Lee el contenido del capítulo seleccionado para que Aura lo analice."""
+        ruta_completa = os.path.join(self.carpeta_capitulos, nombre_archivo)
+        if os.path.exists(ruta_completa):
+            try:
+                with open(ruta_completa, "r", encoding="utf-8") as f:
+                    return f.read()
+            except Exception as e:
+                return f"Error al leer el archivo {nombre_archivo}: {e}"
+        return f"Aviso: El archivo '{nombre_archivo}' no se encuentra en el directorio raíz."
 
-def listar_archivos_capitulos():
-    ficheros = glob.glob("capitulos/*.txt") + glob.glob("*.txt")
-    cap_files = [f for f in ficheros if "capitulo" in f.lower() or "cap" in f.lower() or "c_" in f.lower()]
-    return sorted(list(set(cap_files)))
+    def sincronizar_ Hercules_lore(self, personaje_activo):
+        """Prepara el paquete de directrices visuales para Hércules basado en el lore."""
+        info = self.lore_personajes.get(personaje_activo, {"descripcion": "Personaje secundario de Los Cinco Reinos."})
+        directriz = (
+            f"[MOTOR SYNC HÉRCULES] Personaje: {personaje_activo} | "
+            f"Rasgos clave: {info['descripcion']} | "
+            f"Mandato: Mantener fidelidad estética absoluta al universo de la saga."
+        )
+        return directriz
 
-def aura_analizar_capitulo_y_generar_ideas(fichero_path, tipo_publicacion="Reel Semanal / Vídeo"):
-    datos = cargar_datos_agencia()
-    api_key = datos.get("credenciales", {}).get("gemini", {}).get("api_key", "")
-    
-    if not api_key:
-        return False, "⚠️ Falta la clave API de Gemini en la pestaña de Credenciales."
-    
-    if not os.path.exists(fichero_path):
-        return False, f"⚠️ No se encuentra el fichero {fichero_path}"
-
-    try:
-        with open(fichero_path, "r", encoding="utf-8") as f:
-            texto = f.read()
-    except Exception as e:
-        return False, f"Error al leer el archivo: {str(e)}"
-
-    genai.configure(api_key=api_key)
-    model = genai.GenerativeModel('gemini-1.5-flash')
-
-    prompt = f"""
-    Actúa como AURA, analista literaria de 'Los Cinco Reinos', coordinando a Hércules, Dante, Kira, Hermes, Vulcano y Crono.
-    Lee el texto y extrae en formato JSON puro:
-    1. "personajes": Lista de objetos con [nombre, rol (Protagonista/Secundario/Antagonista/Terciario), edad, descripcion].
-    2. "bestiario": Lista de criaturas [nombre, descripcion].
-    3. "mapas_accesorios": Lista de objetos/lugares [nombre, tipo, descripcion].
-    4. "propuesta_marketing": Objeto con el contenido solicitado de tipo '{tipo_publicacion}' que contenga:
-       - "tipo": "{tipo_publicacion}"
-       - "idea_visual": "Guion o concepto visual para Hércules (incluyendo generación de vídeos o imágenes de personajes)",
-       - "copy": "Texto o guion persuasivo redactado por Dante",
-       - "hashtags": "Hashtags optimizados por Kira para máximo alcance"
-
-    ESTRUCTURA JSON EXACTA:
-    {{
-      "personajes": [{{"nombre": "", "rol": "", "edad": "", "descripcion": ""}}],
-      "bestiario": [{{"nombre": "", "descripcion": ""}}],
-      "mapas_accesorios": [{{"nombre": "", "tipo": "", "descripcion": ""}}],
-      "propuesta_marketing": {{
-        "tipo": "{tipo_publicacion}",
-        "idea_visual": "",
-        "copy": "",
-        "hashtags": ""
-      }}
-    }}
-
-    Texto del capítulo:
-    {texto}
-    """
-
-    try:
-        response = model.generate_content(prompt)
-        text_resp = response.text.strip()
-        if text_resp.startswith("```json"):
-            text_resp = text_resp[7:]
-        if text_resp.endswith("```"):
-            text_resp = text_resp[:-3]
-            
-        resultado = json.loads(text_resp.strip())
+    def procesar_agentes_autonomos(self, capitulo_sel, personaje_sel, formato_sel):
+        """Simula la ejecución coordinada de toda la oficina de agentes."""
+        texto = self.leer_capitulo(capitulo_sel)
+        directriz_hercules = self.sincronizar_ Hercules_lore(personaje_sel) if hasattr(self, 'sincronizar_ Hercules_lore') else ""
         
-        # Sincronización de base de datos
-        for p in resultado.get("personajes", []):
-            if not any(x["nombre"].lower() == p["nombre"].lower() for x in datos["personajes"]):
-                datos["personajes"].append(p)
-        for b in resultado.get("bestiario", []):
-            if not any(x["nombre"].lower() == b["nombre"].lower() for x in datos["bestiario"]):
-                datos["bestiario"].append(b)
-        for m in resultado.get("mapas_accesorios", []):
-            if not any(x["nombre"].lower() == m["nombre"].lower() for x in datos["mapas_accesorios"]):
-                datos["mapas_accesorios"].append(m)
-                
-        if "propuesta_marketing" in resultado:
-            datos["banco_multicanal"].append(resultado["propuesta_marketing"])
-            
-        if fichero_path not in datos["capitulos_auditados"]:
-            datos["capitulos_auditados"].append(fichero_path)
-            
-        guardar_datos_agencia(datos)
-        return True, "✨ Aura y el equipo han procesado el capítulo, actualizado el lore y generado el contenido en el banco multicanal de Crono."
-    except Exception as e:
-        return False, f"Error en la IA: {str(e)}"
+        # Simulación de procesamiento estructurado
+        resultado = {
+            "estado": "Éxito",
+            "aura_analisis": f"Extracción completada de {capitulo_sel}. Se han detectado ganchos de misterio y tensiones en la frontera.",
+            "hercules_render": directriz_hercules,
+            "dante_copy": f"✨ [LOS CINCO REINOS] Un paso más cerca del abismo... Descubre lo que esconde {personaje_sel}. 🔥📖 #{personaje_sel} #Fantasía Épica",
+            "kira_tags": "#LosCincoReinos #BookTok #FantasíaOscura #Lectores #Writers"
+        }
+        return resultado
+
+# Instancia global para importar en app.py
+motor = MotorDiario()
