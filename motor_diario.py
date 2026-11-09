@@ -1,5 +1,6 @@
 import os
 import glob
+import re
 from datetime import datetime
 
 class MotorDiario:
@@ -36,24 +37,35 @@ class MotorDiario:
         return f"Aviso: El archivo '{nombre_archivo}' no se encuentra en el directorio raíz."
 
     def aura_escanear_capitulos_automatico(self):
-        """Aura lee todos los capítulos disponibles y extrae/actualiza personajes automáticamente."""
+        """Aura lee todos los capítulos reales y extrae nombres propios del texto."""
         archivos = self.listar_capitulos()
-        personajes_encontrados = list(self.lore_personajes.keys())
-        
         texto_acumulado = ""
+        
         for arq in archivos:
             texto_acumulado += "\n" + self.leer_capitulo(arq)
 
-        # Lógica de detección automática en base al contenido de los textos
-        # Si el motor detecta nombres recurrentes en el texto, los valida o cataloga
-        menciones_comunes = ["Hugo", "Esther", "Kira", "Dante", "Aura", "Hércules"]
-        nuevos_detectados = []
+        # Expresión regular para detectar palabras con mayúscula inicial que parecen nombres propios
+        # (Ignorando palabras al inicio de frase comunes o conectores)
+        posibles_nombres = re.findall(r'\b[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+\b', texto_acumulado)
         
-        for nombre in menciones_comunes:
-            if nombre in texto_acumulado and nombre not in self.lore_personajes:
+        # Palabras a ignorar que suelen empezar con mayúscula pero no son personajes
+        ignorar = {
+            "El", "La", "Los", "Las", "Un", "Una", "Y", "Pero", "O", "Si", "No", 
+            "Capitulo", "Capítulo", "Reino", "Reinos", "Cinco", "Frontera", "Brisas",
+            "Cuando", "Donde", "Desde", "Hasta", "Entre", "Sobre", "Tras", "Aquel",
+            "Aquella", "Este", "Esta", "Todo", "Todos", "Nada", "Algo", "Sombra"
+        }
+
+        nombres_filtrados = [n for n in set(posibles_nombres) if n not in ignorag and len(n) > 2]
+        ignorar_set = set(ignorar)
+        nombres_validos = [n for n in nombres_filtrados if n not in ignorar_set]
+
+        nuevos_detectados = []
+        for nombre in nombres_validos[:15]:  # Cogemos una muestra relevante para no saturar
+            if nombre not in self.lore_personajes:
                 self.lore_personajes[nombre] = {
-                    "rol": "Personaje secundario / Revelado en capítulos",
-                    "descripcion": f"Extraído automáticamente por Aura del análisis global de los capítulos."
+                    "rol": "Personaje detectado en capítulos",
+                    "descripcion": f"Extraído automáticamente por Aura de los {len(archivos)} capítulos analizados."
                 }
                 nuevos_detectados.append(nombre)
 
@@ -64,7 +76,6 @@ class MotorDiario:
         }
 
     def sincronizar_hercules_lore(self, personaje_activo):
-        """Prepara el paquete de directrices visuales y de render para Hércules."""
         info = self.lore_personajes.get(personaje_activo, {"descripcion": "Personaje de Los Cinco Reinos."})
         directriz = (
             f"🎨 [HÉRCULES - RENDER ACTIVO]\n"
@@ -87,18 +98,16 @@ class MotorDiario:
         return False
 
     def procesar_agentes_autonomos(self, capitulo_sel, personaje_sel, formato_sel):
-        """Ejecuta la coordinación completa de los agentes."""
         texto = self.leer_capitulo(capitulo_sel)
         directriz_hercules = self.sincronizar_hercules_lore(personaje_sel)
         
         resultado = {
             "estado": "Validado",
-            "aura_analisis": f"Análisis exhaustivo de `{capitulo_sel}` finalizado. Se han cruzado las tramas de la frontera con el perfil de {personaje_sel}.",
+            "aura_analisis": f"Análisis exhaustivo de `{capitulo_sel}` finalizado. Se han cruzado las tramas con el perfil de {personaje_sel}.",
             "hercules_render": directriz_hercules,
             "dante_copy": f"✨ [LOS CINCO REINOS] La frontera se quema... ¿Qué esconde realmente {personaje_sel}? Descúbrelo en el nuevo capítulo. 🔥📖 #{personaje_sel} #FantasíaÉpica #BookTok",
             "kira_tags": "#LosCincoReinos #FantasíaOscura #Lectores #WritersOfTikTok #Bookstagram"
         }
         return resultado
 
-# Instancia global
 motor = MotorDiario()
