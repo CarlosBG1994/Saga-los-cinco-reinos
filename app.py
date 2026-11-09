@@ -46,11 +46,12 @@ if menu == "🏢 Oficina de la Agencia":
         st.markdown("### 📖 Aura")
         st.caption("Analista Textual (Lore)")
         st.info("Escanea capítulos y extrae personajes automáticamente.")
-        if st.button("🔍 Ordenar a Aura escanear capítulos"):
-            res_escaneo = motor.aura_escanear_capitulos_automatico()
-            st.success(f"¡Escaneo completado! Capítulos leídos: {res_escaneo['archivos_leidos']}. Personajes totales en Lore: {len(res_escaneo['personajes_totales'])}")
+        if st.button("🔍 Ordenar a Aura escanear capítulos", type="primary"):
+            with st.spinner("Aura está leyendo los capítulos y analizando el texto..."):
+                res_escaneo = motor.aura_escanear_capitulos_automatico()
+            st.success(f"¡Escaneo completado! Capítulos leídos: {res_escaneo['archivos_leidos']}. Personajes totales: {len(res_escaneo['personajes_totales'])}")
             if res_escaneo['nuevos_añadidos']:
-                st.toast(f"¡Aura ha descubierto nuevos personajes: {res_escaneo['nuevos_añadidos']}!")
+                st.info(f"✨ Nuevos personajes detectados: {', '.join(res_escaneo['nuevos_añadidos'])}")
             st.rerun()
 
     with col2:
@@ -58,7 +59,6 @@ if menu == "🏢 Oficina de la Agencia":
         st.caption("Director Gráfico y Vídeo")
         st.success(f"Personaje en escena:\n**{st.session_state['personaje_activo']}**")
         
-        # MOSTRAR EL TRABAJO DE HÉRCULES DE FORMA PERSISTENTE
         st.markdown("---")
         st.markdown("**Último Render / Directriz Visual:**")
         st.code(st.session_state["ultima_directriz_hercules"], language="markdown")
@@ -118,11 +118,9 @@ elif menu == "🤖 Sala de Máquinas (Estado)":
     
     if st.button("🚀 Ordenar a Aura y al equipo procesar y generar propuesta"):
         try:
-            # Aura escanea automáticamente al procesar
             motor.aura_escanear_capitulos_automatico()
             resultado_proceso = motor.procesar_agentes_autonomos(capitulo_sel, st.session_state["personaje_activo"], formato_sel)
             
-            # Guardamos todo en sesión de forma persistente
             st.session_state["ultimo_analisis_aura"] = resultado_proceso['aura_analisis']
             st.session_state["ultima_directriz_hercules"] = resultado_proceso['hercules_render']
             st.session_state["copy_redactado"] = resultado_proceso["dante_copy"] + "\n\n" + resultado_proceso["kira_tags"]
@@ -139,7 +137,6 @@ elif menu == "⏳ Crono (Validación y Publicación)":
     st.header("⏳ Crono - Centro de Validación y Publicación")
     st.markdown("Aquí validas el trabajo de tus agentes. Revisa el análisis de Aura, el render de Hércules y los textos de Dante.")
 
-    # PANEL DE VALIDACIÓN VISIBLE Y PERSISTENTE
     with st.expander("🔍 Auditoría y Trabajo Activo de los Agentes (Validación)", expanded=True):
         col_v1, col_v2 = st.columns(2)
         with col_v1:
@@ -183,10 +180,14 @@ elif menu == "📚 Base de Lore":
     st.header("📚 Base de Datos de Lore")
     st.markdown("Gestiona los personajes de tu saga. Aura los puede extraer de forma automática de tus capítulos o puedes crearlos manualmente.")
     
-    if st.button("🔍 Hacer que Aura escanee todos los capítulos y extraiga personajes"):
-        res = motor.aura_escanear_capitulos_automatico()
-        st.success(f"¡Escaneo masivo finalizado! Personajes catalogados: {len(res['personajes_totales'])}")
-        st.rerun()
+    if st.button("🔍 Hacer que Aura escanee todos los capítulos y extraiga personajes", type="primary"):
+        with st.spinner("Aura está leyendo los capítulos y analizando el texto..."):
+            res = motor.aura_escanear_capitulos_automatico()
+        st.success(f"¡Escaneo masivo finalizado! Capítulos leídos: {res['archivos_leidos']}. Personajes catalogados: {len(res['personajes_totales'])}")
+        if res['nuevos_añadidos']:
+            st.info(f"✨ Nuevos personajes detectados y añadidos: {', '.join(res['nuevos_añadidos'])}")
+        else:
+            st.info("No se han encontrado personajes nuevos en los textos actuales.")
 
     st.markdown("---")
     
