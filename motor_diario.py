@@ -6,7 +6,7 @@ class MotorDiario:
     def __init__(self, carpeta_capitulos="."):
         self.carpeta_capitulos = carpeta_capitulos
         self.historial_proceso = []
-        # Base de lore interna gestionada por el motor
+        # Base de lore interna gestionada dinámicamente
         self.lore_personajes = {
             "Hugo": {
                 "rol": "Protagonista",
@@ -45,16 +45,30 @@ class MotorDiario:
         )
         return directriz
 
+    def agregar_personaje(self, nombre, rol, descripcion):
+        """Permite añadir un nuevo personaje a la base de lore."""
+        if nombre and nombre not in self.lore_personajes:
+            self.lore_personajes[nombre] = {"rol": rol, "descripcion": descripcion}
+            return True
+        return False
+
+    def eliminar_personaje(self, nombre):
+        """Elimina un personaje de la base de lore."""
+        if nombre in self.lore_personajes:
+            del self.lore_personajes[nombre]
+            return True
+        return False
+
     def procesar_agentes_autonomos(self, capitulo_sel, personaje_sel, formato_sel):
         """Simula la ejecución coordinada de toda la oficina de agentes."""
         texto = self.leer_capitulo(capitulo_sel)
         directriz_hercules = self.sincronizar_hercules_lore(personaje_sel)
         
         resultado = {
-            "estado": "Éxito",
-            "aura_analisis": f"Extracción completada de {capitulo_sel}. Se han detectado ganchos de misterio y tensiones en la frontera.",
+            "estado": "Pendiente de Validación",
+            "aura_analisis": f"Extracción completada de `{capitulo_sel}`. Se han detectado ganchos clave y tramas de frontera.",
             "hercules_render": directriz_hercules,
-            "dante_copy": f"✨ [LOS CINCO REINOS] Un paso más cerca del abismo... Descubre lo que esconde {personaje_sel}. 🔥📖 #{personaje_sel} #Fantasía Épica",
+            "dante_copy": f"✨ [LOS CINCO REINOS] Un paso más cerca del abismo... Descubre lo que esconde {personaje_sel}. 🔥📖 #{personaje_sel} #FantasíaÉpica",
             "kira_tags": "#LosCincoReinos #BookTok #FantasíaOscura #Lectores #Writers"
         }
         return resultado
