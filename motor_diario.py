@@ -1,13 +1,12 @@
 import os
 import glob
-import re
 from datetime import datetime
 
 class MotorDiario:
     def __init__(self, carpeta_capitulos="."):
         self.carpeta_capitulos = carpeta_capitulos
         self.historial_proceso = []
-        # Base de lore limpia y estricta (solo personajes reales)
+        # Base de lore limpia y oficial gestionada por ti
         self.lore_personajes = {
             "Hugo": {
                 "rol": "Protagonista",
@@ -37,45 +36,16 @@ class MotorDiario:
         return f"Aviso: El archivo '{nombre_archivo}' no se encuentra en el directorio raíz."
 
     def aura_escanear_capitulos_automatico(self):
-        """Aura analiza los capítulos pero filtra estrictamente verbos y palabras comunes."""
+        """Aura realiza el recuento de capítulos y valida el estado del lore oficial."""
         archivos = self.listar_capitulos()
         texto_acumulado = ""
-        
         for arq in archivos:
             texto_acumulado += "\n" + self.leer_capitulo(arq)
-
-        # Buscamos nombres propios que aparezcan en medio del texto (precedidos por minúscula o puntuación, evitando inicio de frase)
-        # Esto reduce drásticamente que coja verbos conjugados al empezar un párrafo u oración.
-        posibles_nombres = re.findall(r'(?<=[,;\(\)\"\s])[A-ZÁÉÍÓÚÑ][a-záéíóúñ]{3,}\b', texto_acumulado)
-        
-        # Lista masiva de exclusión de palabras que nunca son nombres de personajes
-        ignorar = {
-            "El", "La", "Los", "Las", "Un", "Una", "Y", "Pero", "O", "Si", "No", 
-            "Capitulo", "Capítulo", "Reino", "Reinos", "Cinco", "Frontera", "Brisas",
-            "Cuando", "Donde", "Desde", "Hasta", "Entre", "Sobre", "Tras", "Aquel",
-            "Aquella", "Este", "Esta", "Todo", "Todos", "Nada", "Algo", "Sombra",
-            "Pero", "Porque", "Como", "Tan", "Mas", "Más", "Era", "Eran", "Fue",
-            "Volvamos", "Poco", "Tanto", "Llamó", "Corre", "Perdona", "Hacerlo",
-            "Pociones", "Concérnate", "Entonces", "Mientras", "Despues", "Después",
-            "Aunque", "Apenas", "Siempre", "Nunca", "Hacia", "Contra", "Hacer"
-        }
-
-        nombres_filtrados = [n for n in set(posibles_nombres) if n not in ignorar]
-
-        nuevos_detectados = []
-        # Solo añadimos si realmente parecen nombres consistentes y limpios
-        for nombre in nombres_filtrados:
-            if nombre not in self.lore_personajes and len(nombre) > 3:
-                self.lore_personajes[nombre] = {
-                    "rol": "Personaje detectado en capítulos",
-                    "descripcion": f"Extraído automáticamente por Aura de los textos analizados."
-                }
-                nuevos_detectados.append(nombre)
 
         return {
             "archivos_leidos": len(archivos),
             "personajes_totales": list(self.lore_personajes.keys()),
-            "nuevos_añadidos": nuevos_detectados
+            "nuevos_añadidos": []
         }
 
     def sincronizar_hercules_lore(self, personaje_activo):
@@ -106,7 +76,7 @@ class MotorDiario:
         
         resultado = {
             "estado": "Validado",
-            "aura_analisis": f"Análisis exhaustivo de `{capitulo_sel}` finalizado. Se han cruzado las tramas con el perfil de {personaje_sel}.",
+            "aura_analisis": f"Análisis exhaustivo de `{capitulo_sel}` finalizado. Se han cruzado las tramas de la saga con el perfil de {personaje_sel}.",
             "hercules_render": directriz_hercules,
             "dante_copy": f"✨ [LOS CINCO REINOS] La frontera se quema... ¿Qué esconde realmente {personaje_sel}? Descúbrelo en el nuevo capítulo. 🔥📖 #{personaje_sel} #FantasíaÉpica #BookTok",
             "kira_tags": "#LosCincoReinos #FantasíaOscura #Lectores #WritersOfTikTok #Bookstagram"
