@@ -44,24 +44,23 @@ class MotorDiario:
         for arq in archivos:
             texto_acumulado += "\n" + self.leer_capitulo(arq)
 
-        # Expresión regular para detectar palabras con mayúscula inicial que parecen nombres propios
-        # (Ignorando palabras al inicio de frase comunes o conectores)
+        # Expresión regular para detectar palabras con mayúscula inicial
         posibles_nombres = re.findall(r'\b[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+\b', texto_acumulado)
         
-        # Palabras a ignorar que suelen empezar con mayúscula pero no son personajes
+        # Palabras a ignorar que no son nombres de personajes
         ignorar = {
             "El", "La", "Los", "Las", "Un", "Una", "Y", "Pero", "O", "Si", "No", 
             "Capitulo", "Capítulo", "Reino", "Reinos", "Cinco", "Frontera", "Brisas",
             "Cuando", "Donde", "Desde", "Hasta", "Entre", "Sobre", "Tras", "Aquel",
-            "Aquella", "Este", "Esta", "Todo", "Todos", "Nada", "Algo", "Sombra"
+            "Aquella", "Este", "Esta", "Todo", "Todos", "Nada", "Algo", "Sombra",
+            "Pero", "Porque", "Como", "Tan", "Mas", "Más", "Era", "Eran", "Fue"
         }
 
-        nombres_filtrados = [n for n in set(posibles_nombres) if n not in ignorag and len(n) > 2]
-        ignorar_set = set(ignorar)
-        nombres_validos = [n for n in nombres_filtrados if n not in ignorar_set]
+        # Filtrado correcto sin errores de variables
+        nombres_filtrados = [n for n in set(posibles_nombres) if n not in ignorar and len(n) > 2]
 
         nuevos_detectados = []
-        for nombre in nombres_validos[:15]:  # Cogemos una muestra relevante para no saturar
+        for nombre in nombres_filtrados[:20]:  # Cogemos hasta 20 nombres relevantes
             if nombre not in self.lore_personajes:
                 self.lore_personajes[nombre] = {
                     "rol": "Personaje detectado en capítulos",
