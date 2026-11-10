@@ -7,7 +7,7 @@ class MotorDiario:
     def __init__(self, carpeta_capitulos="."):
         self.carpeta_capitulos = carpeta_capitulos
         self.historial_proceso = []
-        # Base de lore inicial
+        # Base de lore limpia y estricta (solo personajes reales)
         self.lore_personajes = {
             "Hugo": {
                 "rol": "Protagonista",
@@ -37,34 +37,38 @@ class MotorDiario:
         return f"Aviso: El archivo '{nombre_archivo}' no se encuentra en el directorio raíz."
 
     def aura_escanear_capitulos_automatico(self):
-        """Aura lee todos los capítulos reales y extrae nombres propios del texto."""
+        """Aura analiza los capítulos pero filtra estrictamente verbos y palabras comunes."""
         archivos = self.listar_capitulos()
         texto_acumulado = ""
         
         for arq in archivos:
             texto_acumulado += "\n" + self.leer_capitulo(arq)
 
-        # Expresión regular para detectar palabras con mayúscula inicial
-        posibles_nombres = re.findall(r'\b[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+\b', texto_acumulado)
+        # Buscamos nombres propios que aparezcan en medio del texto (precedidos por minúscula o puntuación, evitando inicio de frase)
+        # Esto reduce drásticamente que coja verbos conjugados al empezar un párrafo u oración.
+        posibles_nombres = re.findall(r'(?<=[,;\(\)\"\s])[A-ZÁÉÍÓÚÑ][a-záéíóúñ]{3,}\b', texto_acumulado)
         
-        # Palabras a ignorar que no son nombres de personajes
+        # Lista masiva de exclusión de palabras que nunca son nombres de personajes
         ignorar = {
             "El", "La", "Los", "Las", "Un", "Una", "Y", "Pero", "O", "Si", "No", 
             "Capitulo", "Capítulo", "Reino", "Reinos", "Cinco", "Frontera", "Brisas",
             "Cuando", "Donde", "Desde", "Hasta", "Entre", "Sobre", "Tras", "Aquel",
             "Aquella", "Este", "Esta", "Todo", "Todos", "Nada", "Algo", "Sombra",
-            "Pero", "Porque", "Como", "Tan", "Mas", "Más", "Era", "Eran", "Fue"
+            "Pero", "Porque", "Como", "Tan", "Mas", "Más", "Era", "Eran", "Fue",
+            "Volvamos", "Poco", "Tanto", "Llamó", "Corre", "Perdona", "Hacerlo",
+            "Pociones", "Concérnate", "Entonces", "Mientras", "Despues", "Después",
+            "Aunque", "Apenas", "Siempre", "Nunca", "Hacia", "Contra", "Hacer"
         }
 
-        # Filtrado correcto sin errores de variables
-        nombres_filtrados = [n for n in set(posibles_nombres) if n not in ignorar and len(n) > 2]
+        nombres_filtrados = [n for n in set(posibles_nombres) if n not in ignorar]
 
         nuevos_detectados = []
-        for nombre in nombres_filtrados[:20]:  # Cogemos hasta 20 nombres relevantes
-            if nombre not in self.lore_personajes:
+        # Solo añadimos si realmente parecen nombres consistentes y limpios
+        for nombre in nombres_filtrados:
+            if nombre not in self.lore_personajes and len(nombre) > 3:
                 self.lore_personajes[nombre] = {
                     "rol": "Personaje detectado en capítulos",
-                    "descripcion": f"Extraído automáticamente por Aura de los {len(archivos)} capítulos analizados."
+                    "descripcion": f"Extraído automáticamente por Aura de los textos analizados."
                 }
                 nuevos_detectados.append(nombre)
 
