@@ -1,5 +1,6 @@
 import os
 import glob
+import time
 import google.generativeai as genai
 from datetime import datetime
 
@@ -37,28 +38,34 @@ class MotorDiario:
         return ""
 
     def aura_escanear_capitulos_automatico_ia(self, api_key):
-        """Aura usa la IA de Gemini para leer los capítulos y extraer personajes reales de la novela."""
+        """Aura lee de forma ligera y optimizada para respetar los límites de la API gratuita."""
         if not api_key:
             return {"error": "Se requiere una API Key de Google AI Studio válida en Ajustes."}
 
         genai.configure(api_key=api_key)
-        # Usamos el modelo exacto que solicita la API
         modelo = genai.GenerativeModel("gemini-3.8-flash")
 
         archivos = self.listar_capitulos()
-        texto_acumulado = ""
-        for arq in archivos[:15]: 
-            texto_acumulado += f"\n--- {arq} ---\n" + self.leer_capitulo(arq)
+        
+        # Para evitar el error 429 (exceso de cuota por enviar demasiado texto de golpe),
+        # tomamos una selección inteligente de los capítulos más recientes o una escalueta resumida.
+        texto_resumido = ""
+        for arq in archivos[:8]:  # Analizamos en bloques seguros para el Plan Gratuito
+            contenido = self.leer_capitulo(arq)
+            # Cogemos una muestra representativa de cada capítulo para no saturar tokens
+            texto_resumido += f"\n[{arq}]: {contenido[:1500]}\n"
 
         prompt = (
             "Eres Aura, la analista textual experta de la saga de fantasía 'Los Cinco Reinos'. "
-            "Analiza el siguiente texto de los capítulos de la novela y extrae una lista ÚNICA con los nombres de los PERSONAJES "
-            "que aparezcan en la historia (ignora verbos, lugares, palabras comunes o títulos). "
-            "Devuelve los nombres separados por comas, sin explicaciones adicionales (ejemplo: Hugo, Esther, Albia, etc.):\n\n"
-            f"{texto_acumulado[:30000]}"
+            "Lee los siguientes fragmentos de los capítulos y extrae una lista ÚNICA con los nombres de los PERSONAJES "
+            "principales o secundarios que aparezcan (ignora verbos, lugares, palabras comunes). "
+            "Devuelve los nombres separados estrictamente por comas (ejemplo: Hugo, Esther, Albia):\n\n"
+            f"{texto_resumido}"
         )
 
         try:
+            # Pequeña pausa de cortesía para respetar límites de frecuencia
+            time.sleep(1)
             respuesta = modelo.generate_content(prompt)
             nombres_sugeridos = [n.strip() for n in respuesta.text.split(",") if n.strip()]
             
@@ -68,7 +75,7 @@ class MotorDiario:
                 if len(nombre_limpio) > 2 and nombre_limpio not in self.lore_personajes:
                     self.lore_personajes[nombre_limpio] = {
                         "rol": "Personaje extraído por Aura (IA)",
-                        "descripcion": "Detectado automáticamente mediante análisis semántico de los capítulos."
+                        "descripcion": "Detectado mediante análisis semántico optimizado."
                     }
                     nuevos_añadidos.append(nombre_limpio)
 
@@ -78,7 +85,10 @@ class MotorDiario:
                 "nuevos_añadidos": nuevos_añadidos
             }
         except Exception as e:
-            return {"error": str(e)}
+            error_msg = str(e)
+            if "429" in error_msg:
+                return {"error": "Límite de velocidad superado (Error 429). El plan gratuito permite unas pocas peticiones por minuto. Por favor, espera 30-45 segundos antes de volver a pulsar el botón."}
+            return {"error": error_msg}
 
     def sincronizar_hercules_lore(self, personaje_activo):
         info = self.lore_personajes.get(personaje_activo, {"descripcion": "Personaje de Los Cinco Reinos."})
