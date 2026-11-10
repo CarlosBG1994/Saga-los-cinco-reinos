@@ -9,15 +9,17 @@ st.set_page_config(
     layout="wide"
 )
 
-# Inicializar variables de sesión para que NADA desaparezca
+# Inicializar variables de sesión
 if "copy_redactado" not in st.session_state:
     st.session_state["copy_redactado"] = "✨ Descubre el secreto mejor guardado de Los Cinco Reinos... ¿Te atreves a cruzar la frontera? 🔥📖 #LosCincoReinos #Fantasía"
 if "personaje_activo" not in st.session_state:
     st.session_state["personaje_activo"] = "Hugo"
 if "ultimo_analisis_aura" not in st.session_state:
-    st.session_state["ultimo_analisis_aura"] = "Aura está lista para escanear los capítulos."
+    st.session_state["ultimo_analisis_aura"] = "Aura está lista para escanear los capítulos con IA."
 if "ultima_directriz_hercules" not in st.session_state:
     st.session_state["ultima_directriz_hercules"] = "Hércules está preparado para renderizar al personaje activo."
+if "api_key_gemini" not in st.session_state:
+    st.session_state["api_key_gemini"] = os.environ.get("GEMINI_API_KEY", "")
 
 # Barra lateral de navegación
 st.sidebar.title("👑 Los Cinco Reinos")
@@ -44,15 +46,21 @@ if menu == "🏢 Oficina de la Agencia":
     
     with col1:
         st.markdown("### 📖 Aura")
-        st.caption("Analista Textual (Lore)")
-        st.info("Escanea capítulos y extrae personajes automáticamente.")
-        if st.button("🔍 Ordenar a Aura escanear capítulos", type="primary"):
-            with st.spinner("Aura está leyendo los capítulos y analizando el texto..."):
-                res_escaneo = motor.aura_escanear_capitulos_automatico()
-            st.success(f"¡Escaneo completado! Capítulos leídos: {res_escaneo['archivos_leidos']}. Personajes totales: {len(res_escaneo['personajes_totales'])}")
-            if res_escaneo['nuevos_añadidos']:
-                st.info(f"✨ Nuevos personajes detectados: {', '.join(res_escaneo['nuevos_añadidos'])}")
-            st.rerun()
+        st.caption("Analista Textual (Lore con IA)")
+        st.info("Lee los capítulos mediante inteligencia artificial y extrae personajes.")
+        if st.button("🔍 Ordenar a Aura escanear con IA", type="primary"):
+            if not st.session_state["api_key_gemini"]:
+                st.error("⚠️ Introduce tu Google AI Studio API Key en la pestaña '⚙️ Ajustes y API' para que Aura pueda leer con IA.")
+            else:
+                with st.spinner("Aura está analizando semánticamente los capítulos..."):
+                    res_escaneo = motor.aura_escanear_capitulos_automatico_ia(st.session_state["api_key_gemini"])
+                if "error" in res_escaneo:
+                    st.error(f"Error: {res_escaneo['error']}")
+                else:
+                    st.success(f"¡Análisis IA completado! Capítulos leídos: {res_escaneo['archivos_leidos']}. Personajes totales: {len(res_escaneo['personajes_totales'])}")
+                    if res_escaneo['nuevos_añadidos']:
+                        st.info(f"✨ Nuevos personajes detectados por IA: {', '.join(res_escaneo['nuevos_añadidos'])}")
+                    st.rerun()
 
     with col2:
         st.markdown("### 🎨 Hércules")
@@ -77,14 +85,12 @@ if menu == "🏢 Oficina de la Agencia":
         lista_personajes = list(motor.lore_personajes.keys())
         personaje_elegido = st.selectbox("Personaje protagonista en escena:", lista_personajes)
         st.session_state["personaje_activo"] = personaje_elegido
-        
-        # Actualizamos la directriz de Hércules al cambiar de personaje
         st.session_state["ultima_directriz_hercules"] = motor.sincronizar_hercules_lore(personaje_elegido)
         
         info_p = motor.lore_personajes[personaje_elegido]
         st.info(f"📌 **Ficha activa:** {personaje_elegido} ({info_p['rol']}) — *{info_p['descripcion']}*")
     else:
-        st.warning("⚠️ No hay personajes en la base de Lore. Añade uno o pídele a Aura que escanee los capítulos.")
+        st.warning("⚠️ No hay personajes en la base de Lore.")
 
 # ----------------------------------------------------
 # 2. SALA DE MÁQUINAS (Estado y Procesamiento)
@@ -95,7 +101,7 @@ elif menu == "🤖 Sala de Máquinas (Estado)":
     
     cols = st.columns(6)
     agentes_info = [
-        ("Aura", "Analista Textual", "Escaneando textos"),
+        ("Aura", "Analista Textual", "IA Activa"),
         ("Hércules", "Director Gráfico", "Renderizando fichas"),
         ("Dante", "Copywriter", "Redactando ganchos"),
         ("Kira", "Estratega SEO", "Optimizando hashtags"),
@@ -118,7 +124,6 @@ elif menu == "🤖 Sala de Máquinas (Estado)":
     
     if st.button("🚀 Ordenar a Aura y al equipo procesar y generar propuesta"):
         try:
-            motor.aura_escanear_capitulos_automatico()
             resultado_proceso = motor.procesar_agentes_autonomos(capitulo_sel, st.session_state["personaje_activo"], formato_sel)
             
             st.session_state["ultimo_analisis_aura"] = resultado_proceso['aura_analisis']
@@ -174,20 +179,25 @@ elif menu == "⏳ Crono (Validación y Publicación)":
             st.success("🎉 ¡Contenido validado oficialmente! Ya puedes copiar los textos y subirlo a TikTok.")
 
 # ----------------------------------------------------
-# 4. BASE DE LORE (Crear, Editar, Eliminar y Ver Automáticos)
+# 4. BASE DE LORE
 # ----------------------------------------------------
 elif menu == "📚 Base de Lore":
     st.header("📚 Base de Datos de Lore")
-    st.markdown("Gestiona los personajes de tu saga. Aura los puede extraer de forma automática de tus capítulos o puedes crearlos manualmente.")
+    st.markdown("Gestiona los personajes de tu saga. Aura puede escanear tus 26 capítulos usando IA para extraer los personajes reales.")
     
-    if st.button("🔍 Hacer que Aura escanee todos los capítulos y extraiga personajes", type="primary"):
-        with st.spinner("Aura está leyendo los capítulos y analizando el texto..."):
-            res = motor.aura_escanear_capitulos_automatico()
-        st.success(f"¡Escaneo masivo finalizado! Capítulos leídos: {res['archivos_leidos']}. Personajes catalogados: {len(res['personajes_totales'])}")
-        if res['nuevos_añadidos']:
-            st.info(f"✨ Nuevos personajes detectados y añadidos: {', '.join(res['nuevos_añadidos'])}")
+    if st.button("🔍 Hacer que Aura escanee con IA todos los capítulos", type="primary"):
+        if not st.session_state["api_key_gemini"]:
+            st.error("⚠️ Introduce tu Google AI Studio API Key en la pestaña '⚙️ Ajustes y API'.")
         else:
-            st.info("No se han encontrado personajes nuevos en los textos actuales.")
+            with st.spinner("Aura está leyendo los capítulos con IA para extraer los personajes..."):
+                res = motor.aura_escanear_capitulos_automatico_ia(st.session_state["api_key_gemini"])
+            if "error" in res:
+                st.error(f"Error: {res['error']}")
+            else:
+                st.success(f"¡Escaneo IA finalizado! Capítulos leídos: {res['archivos_leidos']}. Personajes totales: {len(res['personajes_totales'])}")
+                if res['nuevos_añadidos']:
+                    st.info(f"✨ Nuevos personajes reales detectados: {', '.join(res['nuevos_añadidos'])}")
+                st.rerun()
 
     st.markdown("---")
     
@@ -234,11 +244,12 @@ elif menu == "📚 Base de Lore":
 # ----------------------------------------------------
 elif menu == "⚙️ Ajustes y API":
     st.header("⚙️ Configuración del Sistema y Modelos")
-    st.markdown("Ajusta los parámetros de conexión y webhooks de respaldo.")
+    st.markdown("Introduce tu clave de API para que Aura pueda realizar el análisis inteligente de los textos.")
     
-    api_key_input = st.text_input("Google AI Studio API Key", type="password", value=os.environ.get("GEMINI_API_KEY", ""))
+    api_key_input = st.text_input("Google AI Studio API Key", type="password", value=st.session_state["api_key_gemini"])
     modelo_elegido = st.selectbox("Modelo de IA Activo", ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-1.5-flash"])
     webhook_input = st.text_input("Webhook URL (Respaldo)", value="https://hook.eu1.make.com/2mwg5obphqa94k1hxlhdms16rd9ezyhe")
     
     if st.button("💾 Guardar Configuración"):
+        st.session_state["api_key_gemini"] = api_key_input
         st.success("¡Configuración guardada correctamente!")
