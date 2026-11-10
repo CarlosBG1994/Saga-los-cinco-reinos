@@ -42,12 +42,11 @@ class MotorDiario:
             return {"error": "Se requiere una API Key de Google AI Studio válida en Ajustes."}
 
         genai.configure(api_key=api_key)
-        # Usamos un modelo rápido y capaz para análisis de texto
-        modelo = genai.GenerativeModel("gemini-2.5-flash")
+        # Usamos el modelo estable gemini-1.5-flash
+        modelo = genai.GenerativeModel("gemini-1.5-flash")
 
         archivos = self.listar_capitulos()
         texto_acumulado = ""
-        # Tomamos una muestra representativa o el texto de los capítulos para no exceder límites
         for arq in archivos[:15]: 
             texto_acumulado += f"\n--- {arq} ---\n" + self.leer_capitulo(arq)
 
@@ -56,7 +55,7 @@ class MotorDiario:
             "Analiza el siguiente texto de los capítulos de la novela y extrae una lista ÚNICA con los nombres de los PERSONAJES "
             "que aparezcan en la historia (ignora verbos, lugares, palabras comunes o títulos). "
             "Devuelve los nombres separados por comas, sin explicaciones adicionales (ejemplo: Hugo, Esther, Albia, etc.):\n\n"
-            f"{texto_acumulado[:30000]}" # Limitamos por seguridad de tokens
+            f"{texto_acumulado[:30000]}"
         )
 
         try:
@@ -65,7 +64,6 @@ class MotorDiario:
             
             nuevos_añadidos = []
             for nombre in nombres_sugeridos:
-                # Limpiamos posibles formatos extra
                 nombre_limpio = nombre.replace("-", "").title()
                 if len(nombre_limpio) > 2 and nombre_limpio not in self.lore_personajes:
                     self.lore_personajes[nombre_limpio] = {
