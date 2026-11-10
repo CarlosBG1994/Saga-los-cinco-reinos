@@ -1,5 +1,6 @@
 import streamlit as st
 import os
+import threading
 from motor_diario import motor
 
 # Configuración de la página
@@ -9,7 +10,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# Inicializar variables de sesión
+# Inicializar variables de sesión y estado de hilos
 if "copy_redactado" not in st.session_state:
     st.session_state["copy_redactado"] = "✨ Descubre el secreto mejor guardado de Los Cinco Reinos... ¿Te atreves a cruzar la frontera? 🔥📖 #LosCincoReinos #Fantasía"
 if "personaje_activo" not in st.session_state:
@@ -20,6 +21,8 @@ if "ultima_directriz_hercules" not in st.session_state:
     st.session_state["ultima_directriz_hercules"] = "Hércules está preparado para renderizar al personaje activo."
 if "api_key_gemini" not in st.session_state:
     st.session_state["api_key_gemini"] = os.environ.get("GEMINI_API_KEY", "")
+if "aura_estado_proceso" not in st.session_state:
+    st.session_state["aura_estado_proceso"] = "Inactivo"
 
 # Barra lateral de navegación
 st.sidebar.title("👑 Los Cinco Reinos")
@@ -47,20 +50,36 @@ if menu == "🏢 Oficina de la Agencia":
     with col1:
         st.markdown("### 📖 Aura")
         st.caption("Analista Textual (Lore con IA)")
-        st.info("Lee los capítulos mediante inteligencia artificial y extrae personajes.")
-        if st.button("🔍 Ordenar a Aura escanear con IA", type="primary"):
+        st.info("Lee los capítulos en segundo plano y extrae personajes sin bloquear la app.")
+        
+        # Mostrar estado actual del hilo en background
+        if st.session_state["aura_estado_proceso"] == "Procesando":
+            st.warning("🔄 Aura está trabajando en segundo plano... Puedes seguir navegando.")
+        elif st.session_state["aura_estado_proceso"] == "Completado":
+            st.success("✅ ¡Análisis en segundo plano finalizado con éxito!")
+        
+        if st.button("🔍 Ordenar a Aura escanear en 2º plano", type="primary"):
             if not st.session_state["api_key_gemini"]:
-                st.error("⚠️ Introduce tu Google AI Studio API Key en la pestaña '⚙️ Ajustes y API' para que Aura pueda leer con IA.")
+                st.error("⚠️ Introduce tu Google AI Studio API Key en la pestaña '⚙️ Ajustes y API'.")
             else:
-                with st.spinner("Aura está analizando semánticamente los capítulos..."):
-                    res_escaneo = motor.aura_escanear_capitulos_automatico_ia(st.session_state["api_key_gemini"])
-                if "error" in res_escaneo:
-                    st.error(f"Error: {res_escaneo['error']}")
-                else:
-                    st.success(f"¡Análisis IA completado! Capítulos leídos: {res_escaneo['archivos_leidos']}. Personajes totales: {len(res_escaneo['personajes_totales'])}")
-                    if res_escaneo['nuevos_añadidos']:
-                        st.info(f"✨ Nuevos personajes detectados por IA: {', '.join(res_escaneo['nuevos_añadidos'])}")
-                    st.rerun()
+                st.session_state["aura_estado_proceso"] = "Procesando"
+                
+                # Función que corre en un hilo independiente (Background Thread)
+                def tarea_en_segundo_plano(api_key):
+                    resultado = motor.aura_escanear_capitulos_automatico_ia(api_key)
+                    if "error" in resultado:
+                        st.session_state["ultimo_analisis_aura"] = f"Error: {resultado['error']}"
+                    else:
+                        st.session_state["ultimo_analisis_aura"] = f"¡Escaneo IA completado! Capítulos leídos: {resultado['archivos_leidos']}. Personajes totales: {len(resultado['personajes_totales'])}"
+                        if resultado['nuevos_añadidos']:
+                            st.session_state["ultimo_analisis_aura"] += f"\nNuevos: {', '.join(resultado['nuevos_añadidos'])}"
+                    st.session_state["aura_estado_proceso"] = "Completado"
+
+                # Lanzamos el hilo para que trabaje sin bloquear la interfaz
+                hilo = threading.Thread(target=tarea_en_segundo_plano, args=(st.session_state["api_key_gemini"],))
+                hilo.daemon = True
+                hilo.start()
+                st.success("🚀 ¡Orden enviada! Aura procesará los textos en segundo plano. Puedes moverte por la app libremente.")
 
     with col2:
         st.markdown("### 🎨 Hércules")
@@ -101,7 +120,7 @@ elif menu == "🤖 Sala de Máquinas (Estado)":
     
     cols = st.columns(6)
     agentes_info = [
-        ("Aura", "Analista Textual", "IA Activa"),
+        ("Aura", "Analista Textual", st.session_state["aura_estado_proceso"]),
         ("Hércules", "Director Gráfico", "Renderizando fichas"),
         ("Dante", "Copywriter", "Redactando ganchos"),
         ("Kira", "Estratega SEO", "Optimizando hashtags"),
@@ -113,7 +132,7 @@ elif menu == "🤖 Sala de Máquinas (Estado)":
         with cols[i]:
             st.markdown(f"**{nombre}**")
             st.caption(rol)
-            st.success(estado)
+            st.info(estado)
 
     st.markdown("---")
     st.subheader("⚙️ Panel de Control de Contenido")
@@ -183,21 +202,29 @@ elif menu == "⏳ Crono (Validación y Publicación)":
 # ----------------------------------------------------
 elif menu == "📚 Base de Lore":
     st.header("📚 Base de Datos de Lore")
-    st.markdown("Gestiona los personajes de tu saga. Aura puede escanear tus 26 capítulos usando IA para extraer los personajes reales.")
+    st.markdown("Gestiona los personajes de tu saga. Aura puede escanear tus 26 capítulos usando IA en segundo plano.")
     
-    if st.button("🔍 Hacer que Aura escanee con IA todos los capítulos", type="primary"):
+    if st.session_state["aura_estado_proceso"] == "Procesando":
+        st.warning("🔄 Aura está analizando los capítulos en segundo plano...")
+    
+    if st.button("🔍 Hacer que Aura escanee con IA en 2º plano", type="primary"):
         if not st.session_state["api_key_gemini"]:
             st.error("⚠️ Introduce tu Google AI Studio API Key en la pestaña '⚙️ Ajustes y API'.")
         else:
-            with st.spinner("Aura está leyendo los capítulos con IA para extraer los personajes..."):
-                res = motor.aura_escanear_capitulos_automatico_ia(st.session_state["api_key_gemini"])
-            if "error" in res:
-                st.error(f"Error: {res['error']}")
-            else:
-                st.success(f"¡Escaneo IA finalizado! Capítulos leídos: {res['archivos_leidos']}. Personajes totales: {len(res['personajes_totales'])}")
-                if res['nuevos_añadidos']:
-                    st.info(f"✨ Nuevos personajes reales detectados: {', '.join(res['nuevos_añadidos'])}")
-                st.rerun()
+            st.session_state["aura_estado_proceso"] = "Procesando"
+            
+            def tarea_lore_background(api_key):
+                resultado = motor.aura_escanear_capitulos_automatico_ia(api_key)
+                if "error" in resultado:
+                    st.session_state["ultimo_analisis_aura"] = f"Error: {resultado['error']}"
+                else:
+                    st.session_state["ultimo_analisis_aura"] = f"¡Escaneo IA completado! Capítulos leídos: {resultado['archivos_leidos']}. Personajes totales: {len(resultado['personajes_totales'])}"
+                st.session_state["aura_estado_proceso"] = "Completado"
+
+            hilo = threading.Thread(target=tarea_lore_background, args=(st.session_state["api_key_gemini"],))
+            hilo.daemon = True
+            hilo.start()
+            st.success("🚀 ¡Proceso lanzado en segundo plano! Puedes seguir usando la aplicación mientras Aura trabaja.")
 
     st.markdown("---")
     
@@ -244,10 +271,10 @@ elif menu == "📚 Base de Lore":
 # ----------------------------------------------------
 elif menu == "⚙️ Ajustes y API":
     st.header("⚙️ Configuración del Sistema y Modelos")
-    st.markdown("Introduce tu clave de API para que Aura pueda realizar el análisis inteligente de los textos.")
+    st.markdown("Introduce tu clave de API para que Aura pueda realizar el análisis inteligente.")
     
     api_key_input = st.text_input("Google AI Studio API Key", type="password", value=st.session_state["api_key_gemini"])
-    modelo_elegido = st.selectbox("Modelo de IA Activo", ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-1.5-flash"])
+    modelo_elegido = st.selectbox("Modelo de IA Activo", ["gemini-3.8-flash", "gemini-2.5-flash", "gemini-1.5-flash"])
     webhook_input = st.text_input("Webhook URL (Respaldo)", value="https://hook.eu1.make.com/2mwg5obphqa94k1hxlhdms16rd9ezyhe")
     
     if st.button("💾 Guardar Configuración"):
