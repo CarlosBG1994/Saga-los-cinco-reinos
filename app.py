@@ -10,7 +10,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# Inicializar variables de sesión y estado de hilos
+# Inicializar variables de sesión
 if "copy_redactado" not in st.session_state:
     st.session_state["copy_redactado"] = "✨ Descubre el secreto mejor guardado de Los Cinco Reinos... ¿Te atreves a cruzar la frontera? 🔥📖 #LosCincoReinos #Fantasía"
 if "personaje_activo" not in st.session_state:
@@ -23,6 +23,8 @@ if "api_key_gemini" not in st.session_state:
     st.session_state["api_key_gemini"] = os.environ.get("GEMINI_API_KEY", "")
 if "aura_estado_proceso" not in st.session_state:
     st.session_state["aura_estado_proceso"] = "Inactivo"
+if "imagen_hercules_bytes" not in st.session_state:
+    st.session_state["imagen_hercules_bytes"] = None
 
 # Barra lateral de navegación
 st.sidebar.title("👑 Los Cinco Reinos")
@@ -50,52 +52,59 @@ if menu == "🏢 Oficina de la Agencia":
     with col1:
         st.markdown("### 📖 Aura")
         st.caption("Analista Textual (Lore con IA)")
-        st.info("Lee los capítulos en segundo plano y extrae personajes sin bloquear la app.")
+        st.info("Lee los capítulos en segundo plano y extrae personajes.")
         
-        # Mostrar estado actual del hilo en background
         if st.session_state["aura_estado_proceso"] == "Procesando":
-            st.warning("🔄 Aura está trabajando en segundo plano... Puedes seguir navegando.")
+            st.warning("🔄 Aura está trabajando en segundo plano...")
         elif st.session_state["aura_estado_proceso"] == "Completado":
-            st.success("✅ ¡Análisis en segundo plano finalizado con éxito!")
+            st.success("✅ ¡Análisis completado!")
         
         if st.button("🔍 Ordenar a Aura escanear en 2º plano", type="primary"):
             if not st.session_state["api_key_gemini"]:
                 st.error("⚠️ Introduce tu Google AI Studio API Key en la pestaña '⚙️ Ajustes y API'.")
             else:
                 st.session_state["aura_estado_proceso"] = "Procesando"
-                
-                # Función que corre en un hilo independiente (Background Thread)
-                def tarea_en_segundo_plano(api_key):
-                    resultado = motor.aura_escanear_capitulos_automatico_ia(api_key)
-                    if "error" in resultado:
-                        st.session_state["ultimo_analisis_aura"] = f"Error: {resultado['error']}"
+                def tarea_bg(api_key):
+                    res = motor.aura_escanear_capitulos_automatico_ia(api_key)
+                    if "error" in res:
+                        st.session_state["ultimo_analisis_aura"] = f"Error: {res['error']}"
                     else:
-                        st.session_state["ultimo_analisis_aura"] = f"¡Escaneo IA completado! Capítulos leídos: {resultado['archivos_leidos']}. Personajes totales: {len(resultado['personajes_totales'])}"
-                        if resultado['nuevos_añadidos']:
-                            st.session_state["ultimo_analisis_aura"] += f"\nNuevos: {', '.join(resultado['nuevos_añadidos'])}"
+                        st.session_state["ultimo_analisis_aura"] = f"¡Escaneo completado! Capítulos leídos: {res['archivos_leidos']}. Personajes totales: {len(res['personajes_totales'])}"
                     st.session_state["aura_estado_proceso"] = "Completado"
-
-                # Lanzamos el hilo para que trabaje sin bloquear la interfaz
-                hilo = threading.Thread(target=tarea_en_segundo_plano, args=(st.session_state["api_key_gemini"],))
+                
+                hilo = threading.Thread(target=tarea_bg, args=(st.session_state["api_key_gemini"],))
                 hilo.daemon = True
                 hilo.start()
-                st.success("🚀 ¡Orden enviada! Aura procesará los textos en segundo plano. Puedes moverte por la app libremente.")
+                st.success("🚀 ¡Proceso lanzado en segundo plano!")
 
     with col2:
         st.markdown("### 🎨 Hércules")
         st.caption("Director Gráfico y Vídeo")
         st.success(f"Personaje en escena:\n**{st.session_state['personaje_activo']}**")
         
-        st.markdown("---")
-        st.markdown("**Último Render / Directriz Visual:**")
-        st.code(st.session_state["ultima_directriz_hercules"], language="markdown")
+        if st.button("🖼️ Ordenar a Hércules Renderizar Imagen"):
+            if not st.session_state["api_key_gemini"]:
+                st.error("⚠️ Introduce tu API Key en Ajustes.")
+            else:
+                with st.spinner("Hércules está generando el arte visual 9:16..."):
+                    img_bytes, err = motor.hercules_generar_imagen_personaje(st.session_state["personaje_activo"], st.session_state["api_key_gemini"])
+                    if err:
+                        st.warning(err)
+                    else:
+                        st.session_state["imagen_hercules_bytes"] = img_bytes
+                        st.success("✨ ¡Imagen generada con éxito por Hércules!")
+
+        if st.session_state["imagen_hercules_bytes"]:
+            st.image(st.session_state["imagen_hercules_bytes"], caption=f"Render de {st.session_state['personaje_activo']}", use_column_width=True)
+        else:
+            st.info("🖼️ Pulsa el botón superior para que Hércules genere el arte gráfico del personaje.")
 
     with col3:
         st.markdown("### ✍️ Dante & Kira")
         st.caption("Copywriting & SEO")
         st.warning("Redactando ganchos y optimizando hashtags.")
         if st.button("💬 Consultar a Dante"):
-            st.toast("Dante: 'Los copys están optimizados para enganchar en TikTok al instante.'")
+            st.toast("Dante: 'Los copys están listos para TikTok.'")
 
     st.markdown("---")
     st.subheader("👥 Selector de Personaje Activo para Hércules")
@@ -112,22 +121,19 @@ if menu == "🏢 Oficina de la Agencia":
         st.warning("⚠️ No hay personajes en la base de Lore.")
 
 # ----------------------------------------------------
-# 2. SALA DE MÁQUINAS (Estado y Procesamiento)
+# 2. SALA DE MÁQUINAS
 # ----------------------------------------------------
 elif menu == "🤖 Sala de Máquinas (Estado)":
     st.title("🕹️ Estado del Equipo en Directo (Sala de Máquinas)")
-    st.markdown("Monitorización en tiempo real de los procesos autónomos de la agencia.")
-    
     cols = st.columns(6)
     agentes_info = [
-        ("Aura", "Analista Textual", st.session_state["aura_estado_proceso"]),
-        ("Hércules", "Director Gráfico", "Renderizando fichas"),
-        ("Dante", "Copywriter", "Redactando ganchos"),
-        ("Kira", "Estratega SEO", "Optimizando hashtags"),
-        ("Hermes", "Soporte Redes", "Monitoreando flujos"),
-        ("Crono", "Orquestador", "Listo para validación")
+        ("Aura", "Analista", st.session_state["aura_estado_proceso"]),
+        ("Hércules", "Director Gráfico", "Listo para render"),
+        ("Dante", "Copywriter", "Activo"),
+        ("Kira", "SEO", "Activa"),
+        ("Hermes", "Soporte", "OK"),
+        ("Crono", "Orquestador", "OK")
     ]
-    
     for i, (nombre, rol, estado) in enumerate(agentes_info):
         with cols[i]:
             st.markdown(f"**{nombre}**")
@@ -135,148 +141,96 @@ elif menu == "🤖 Sala de Máquinas (Estado)":
             st.info(estado)
 
     st.markdown("---")
-    st.subheader("⚙️ Panel de Control de Contenido")
-    
     archivos_disponibles = motor.listar_capitulos()
     capitulo_sel = st.selectbox("Elegir Archivo de Capítulo", archivos_disponibles)
-    formato_sel = st.selectbox("¿Qué formato de contenido necesitas esta semana?", ["Publicación / Post Estático", "Vídeo Corto (Reel/TikTok)", "Carrusel de Lore"])
+    formato_sel = st.selectbox("Formato de contenido:", ["Publicación / Post Estático", "Vídeo Corto (Reel/TikTok)", "Carrusel de Lore"])
     
-    if st.button("🚀 Ordenar a Aura y al equipo procesar y generar propuesta"):
-        try:
-            resultado_proceso = motor.procesar_agentes_autonomos(capitulo_sel, st.session_state["personaje_activo"], formato_sel)
-            
-            st.session_state["ultimo_analisis_aura"] = resultado_proceso['aura_analisis']
-            st.session_state["ultima_directriz_hercules"] = resultado_proceso['hercules_render']
-            st.session_state["copy_redactado"] = resultado_proceso["dante_copy"] + "\n\n" + resultado_proceso["kira_tags"]
-            
-            st.success("¡El equipo ha procesado la propuesta con éxito! Dirígete a **⏳ Crono** para validarla.")
-            
-        except Exception as e:
-            st.error(f"Error controlado en el motor: {e}")
+    if st.button("🚀 Ordenar al equipo procesar y generar propuesta"):
+        res = motor.procesar_agentes_autonomos(capitulo_sel, st.session_state["personaje_activo"], formato_sel)
+        st.session_state["ultimo_analisis_aura"] = res['aura_analisis']
+        st.session_state["ultima_directriz_hercules"] = res['hercules_render']
+        st.session_state["copy_redactado"] = res["dante_copy"] + "\n\n" + res["kira_tags"]
+        st.success("¡Propuesta generada! Dirígete a **⏳ Crono**.")
 
 # ----------------------------------------------------
-# 3. CRONO (Validación y Publicación Manual)
+# 3. CRONO (Validación y Publicación)
 # ----------------------------------------------------
 elif menu == "⏳ Crono (Validación y Publicación)":
     st.header("⏳ Crono - Centro de Validación y Publicación")
-    st.markdown("Aquí validas el trabajo de tus agentes. Revisa el análisis de Aura, el render de Hércules y los textos de Dante.")
-
-    with st.expander("🔍 Auditoría y Trabajo Activo de los Agentes (Validación)", expanded=True):
+    
+    with st.expander("🔍 Auditoría Gráfica y Textual de los Agentes", expanded=True):
         col_v1, col_v2 = st.columns(2)
         with col_v1:
-            st.markdown("### 📖 Análisis de Aura (Lore)")
+            st.markdown("### 📖 Análisis de Aura")
             st.write(st.session_state["ultimo_analisis_aura"])
         with col_v2:
-            st.markdown("### 🎨 Render y Directriz de Hércules")
+            st.markdown("### 🎨 Render de Hércules")
+            if st.session_state["imagen_hercules_bytes"]:
+                st.image(st.session_state["imagen_hercules_bytes"], width=200, caption="Arte activo")
             st.code(st.session_state["ultima_directriz_hercules"], language="markdown")
 
     st.markdown("---")
-    
     col_video, col_text = st.columns([1, 1])
     
     with col_video:
         st.subheader("🎬 Previsualización de la Pieza Real")
-        video_subido = st.file_uploader("Sube el archivo de vídeo definitivo generado para esta pieza:", type=["mp4", "mov", "avi"])
-        
+        video_subido = st.file_uploader("Sube el archivo de vídeo definitivo (.mp4):", type=["mp4", "mov", "avi"])
         if video_subido is not None:
             st.video(video_subido)
-            st.success("✅ ¡Vídeo validado y cargado correctamente!")
+            st.success("✅ ¡Vídeo validado!")
         else:
-            st.info("📂 Sube aquí el archivo MP4 para previsualizarlo junto a su música.")
+            st.info("📂 Sube aquí tu archivo MP4 para previsualizarlo.")
 
     with col_text:
-        st.subheader("✍️ Textos y Ganchos validados")
-        st.markdown(f"**Personaje activo vinculado:** `{st.session_state['personaje_activo']}`")
-        
-        copy_output = st.text_area(
-            "Copia el copy preparado:", 
-            value=st.session_state["copy_redactado"], 
-            height=180
-        )
-        
-        if st.button("✅ Validar y Aprobar Contenido para Publicar"):
-            st.success("🎉 ¡Contenido validado oficialmente! Ya puedes copiar los textos y subirlo a TikTok.")
+        st.subheader("✍️ Textos validados")
+        st.markdown(f"**Personaje activo:** `{st.session_state['personaje_activo']}`")
+        copy_output = st.text_area("Copia el copy preparado:", value=st.session_state["copy_redactado"], height=180)
+        if st.button("✅ Validar y Aprobar Contenido"):
+            st.success("🎉 ¡Contenido aprobado oficialmente para TikTok!")
 
 # ----------------------------------------------------
 # 4. BASE DE LORE
 # ----------------------------------------------------
 elif menu == "📚 Base de Lore":
     st.header("📚 Base de Datos de Lore")
-    st.markdown("Gestiona los personajes de tu saga. Aura puede escanear tus 26 capítulos usando IA en segundo plano.")
-    
-    if st.session_state["aura_estado_proceso"] == "Procesando":
-        st.warning("🔄 Aura está analizando los capítulos en segundo plano...")
-    
     if st.button("🔍 Hacer que Aura escanee con IA en 2º plano", type="primary"):
         if not st.session_state["api_key_gemini"]:
-            st.error("⚠️ Introduce tu Google AI Studio API Key en la pestaña '⚙️ Ajustes y API'.")
+            st.error("⚠️ Introduce tu API Key en Ajustes.")
         else:
             st.session_state["aura_estado_proceso"] = "Procesando"
-            
-            def tarea_lore_background(api_key):
-                resultado = motor.aura_escanear_capitulos_automatico_ia(api_key)
-                if "error" in resultado:
-                    st.session_state["ultimo_analisis_aura"] = f"Error: {resultado['error']}"
-                else:
-                    st.session_state["ultimo_analisis_aura"] = f"¡Escaneo IA completado! Capítulos leídos: {resultado['archivos_leidos']}. Personajes totales: {len(resultado['personajes_totales'])}"
+            def tarea_lore(api_key):
+                motor.aura_escanear_capitulos_automatico_ia(api_key)
                 st.session_state["aura_estado_proceso"] = "Completado"
-
-            hilo = threading.Thread(target=tarea_lore_background, args=(st.session_state["api_key_gemini"],))
+            hilo = threading.Thread(target=tarea_lore, args=(st.session_state["api_key_gemini"],))
             hilo.daemon = True
             hilo.start()
-            st.success("🚀 ¡Proceso lanzado en segundo plano! Puedes seguir usando la aplicación mientras Aura trabaja.")
+            st.success("🚀 Escaneo lanzado en segundo plano.")
 
     st.markdown("---")
-    
     with st.expander("➕ Añadir Nuevo Personaje Manualmente"):
-        nuevo_nombre_ing = st.text_input("Nombre del personaje")
-        nuevo_rol_ing = st.selectbox("Rol principal", ["Protagonista", "Secundario", "Antagonista", "Secuaz"], key="rol_nuevo")
-        nueva_desc_ing = st.text_area("Descripción física y psicológica", key="desc_nueva")
-        
-        if st.button("💾 Guardar Nuevo Personaje"):
-            if nuevo_nombre_ing:
-                if motor.agregar_personaje(nuevo_nombre_ing, nuevo_rol_ing, nueva_desc_ing):
-                    st.success(f"¡Personaje '{nuevo_nombre_ing}' catalogado con éxito!")
-                    st.rerun()
-                else:
-                    st.error("El personaje ya existe o el nombre está vacío.")
-            else:
-                st.warning("Introduce un nombre válido.")
+        nombre_in = st.text_input("Nombre")
+        rol_in = st.selectbox("Rol", ["Protagonista", "Secundario", "Antagonista", "Secuaz"])
+        desc_in = st.text_area("Descripción")
+        if st.button("💾 Guardar Personaje"):
+            if nombre_in and motor.agregar_personaje(nombre_in, rol_in, desc_in):
+                st.success(f"¡{nombre_in} guardado!")
+                st.rerun()
 
     st.markdown("---")
-    st.subheader("📋 Personajes Registrados en el Sistema")
-    
-    if not motor.lore_personajes:
-        st.info("No hay personajes registrados actualmente.")
-    else:
-        for pers, datos in list(motor.lore_personajes.items()):
-            with st.expander(f"👤 {pers} — [{datos['rol']}]"):
-                nuevo_rol = st.selectbox("Rol", ["Protagonista", "Secundario", "Antagonista", "Secuaz"], index=0, key=f"rol_edit_{pers}")
-                nueva_desc = st.text_area("Descripción física y psicológica", value=datos["descripcion"], key=f"desc_edit_{pers}")
-                
-                col_btn1, col_btn2 = st.columns(2)
-                with col_btn1:
-                    if st.button(f"💾 Actualizar Ficha", key=f"btn_act_{pers}"):
-                        motor.lore_personajes[pers]["rol"] = nuevo_rol
-                        motor.lore_personajes[pers]["descripcion"] = nueva_desc
-                        st.success(f"¡Ficha de {pers} actualizada!")
-                with col_btn2:
-                    if st.button(f"🗑️ Eliminar", key=f"btn_del_{pers}"):
-                        motor.eliminar_personaje(pers)
-                        st.success(f"¡Personaje {pers} eliminado!")
-                        st.rerun()
+    st.subheader("📋 Personajes Registrados")
+    for pers, datos in list(motor.lore_personajes.items()):
+        with st.expander(f"👤 {pers} — [{datos['rol']}]"):
+            st.write(f"**Descripción:** {datos['descripcion']}")
+            if st.button(f"🗑️ Eliminar {pers}", key=f"del_{pers}"):
+                motor.eliminar_personaje(pers)
+                st.rerun()
 
 # ----------------------------------------------------
 # 5. AJUSTES Y API
 # ----------------------------------------------------
 elif menu == "⚙️ Ajustes y API":
     st.header("⚙️ Configuración del Sistema y Modelos")
-    st.markdown("Introduce tu clave de API para que Aura pueda realizar el análisis inteligente.")
-    
     api_key_input = st.text_input("Google AI Studio API Key", type="password", value=st.session_state["api_key_gemini"])
-    modelo_elegido = st.selectbox("Modelo de IA Activo", ["gemini-3.8-flash", "gemini-2.5-flash", "gemini-1.5-flash"])
-    webhook_input = st.text_input("Webhook URL (Respaldo)", value="https://hook.eu1.make.com/2mwg5obphqa94k1hxlhdms16rd9ezyhe")
-    
     if st.button("💾 Guardar Configuración"):
         st.session_state["api_key_gemini"] = api_key_input
         st.success("¡Configuración guardada correctamente!")
