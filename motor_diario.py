@@ -42,8 +42,8 @@ class MotorDiario:
             return {"error": "Se requiere una API Key de Google AI Studio válida en Ajustes."}
 
         genai.configure(api_key=api_key)
-        # Usamos el modelo actual compatible gemini-2.0-flash
-        modelo = genai.GenerativeModel("gemini-2.0-flash")
+        # Usamos el modelo exacto que solicita la API
+        modelo = genai.GenerativeModel("gemini-3.8-flash")
 
         archivos = self.listar_capitulos()
         texto_acumulado = ""
