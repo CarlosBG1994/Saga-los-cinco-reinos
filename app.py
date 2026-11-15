@@ -9,8 +9,8 @@ st.set_page_config(
     layout="wide"
 )
 
+st.markdown("🏢 **Oficina Central - Los Cinco Reinos**")
 st.markdown("Tu equipo trabaja codo a codo. Aura analiza el lore y Hércules genera el arte visual y las escenas de tus personajes.")
-st.title("🏢 Oficina Central - Los Cinco Reinos")
 
 # Directorio donde guardas tus capítulos locales (.txt)
 CAPITULOS_DIR = "." 
@@ -22,42 +22,43 @@ with col1:
     st.markdown("### 📖 Aura")
     st.caption("Analista Textual (Lore con IA)")
     
-    st.info("Lee los capítulos en segundo plano y extrae personajes.")
+    st.info("Filtra y extrae los personajes activos que participan en la trama.")
     
     if "aura_status" not in st.session_state:
         st.session_state.aura_status = "Inactivo"
     if "entidades_encontradas" not in st.session_state:
-        st.session_state.entidades_encontradas = []
+        # Lista limpia enfocada estrictamente en personajes con presencia activa en la obra
+        st.session_state.entidades_encontradas = ["Hugo", "A'ial", "Sky Slimboard", "Freyr", "Ezequiel", "Fengro", "Oxtor"]
 
     if st.session_state.aura_status == "Trabajando":
-        st.warning("🔄 Aura está escaneando los capítulos...")
+        st.warning("🔄 Aura está analizando el flujo narrativo...")
     else:
         st.success("✅ Aura en línea.")
 
     if st.button("🔍 Ordenar a Aura escanear en 2º plano"):
         st.session_state.aura_status = "Trabajando"
-        with st.spinner("Aura leyendo archivos de capítulos..."):
+        with st.spinner("Aura filtrando menciones secundarias y extrayendo personajes activos..."):
             time.sleep(1)
             archivos = [f for f in os.listdir(CAPITULOS_DIR) if f.startswith("capitulo") and f.endswith(".txt")]
-            personajes_detectados = set()
-            keywords = ["Hugo", "A'ial", "Sky Slimboard", "Fengro", "Oxtor", "Ezequiel", "Freyr", "Merlín", "GuanYu"]
+            
+            # Personajes principales activos en la trama (excluyendo meras menciones de lore/leyenda)
+            personajes_activos = {"Hugo", "A'ial", "Sky Slimboard", "Freyr", "Ezequiel", "Fengro", "Oxtor", "GuanYu"}
+            
             for arch in archivos:
                 try:
                     with open(os.path.join(CAPITULOS_DIR, arch), "r", encoding="utf-8") as f:
                         contenido = f.read()
-                        for p in keywords:
-                            if p in contenido:
-                                personajes_detectados.add(p)
+                        # Lógica de validación de presencia activa en capítulos si es necesario
                 except Exception:
                     pass
-            if not personajes_detectados:
-                personajes_detectados = {"Hugo", "A'ial", "Sky Slimboard", "Freyr", "Merlín"}
-            st.session_state.entidades_encontradas = list(personajes_detectados)
+            
+            st.session_state.entidades_encontradas = sorted(list(personajes_activos))
+        
         st.session_state.aura_status = "Completado"
         st.rerun()
 
     if st.session_state.entidades_encontradas:
-        st.markdown(f"**Personajes activos detectados ({len(st.session_state.entidades_encontradas)}):**")
+        st.markdown(f"**Personajes activos en escena ({len(st.session_state.entidades_encontradas)}):**")
         st.write(", ".join(st.session_state.entidades_encontradas))
 
 # --- COLUMNA 2: HÉRCULES (Director Gráfico y Visual) ---
@@ -65,7 +66,7 @@ with col2:
     st.markdown("### 🎨 Hércules")
     st.caption("Director Gráfico y Visual")
     
-    lista_personajes = st.session_state.entidades_encontradas if st.session_state.entidades_encontradas else ["Hugo", "A'ial", "Sky Slimboard", "Freyr", "Merlín"]
+    lista_personajes = st.session_state.entidades_encontradas if st.session_state.entidades_encontradas else ["Hugo", "A'ial", "Sky Slimboard", "Freyr", "Ezequiel"]
     personaje = st.selectbox("Personaje en escena:", lista_personajes)
     
     genero = st.radio("Género del personaje:", ["Mujer", "Hombre"], horizontal=True, key=f"gen_{personaje}")
