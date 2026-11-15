@@ -80,15 +80,14 @@ class MotorDiario:
         except Exception as e:
             return {"error": str(e)}
 
-    def hercules_generar_imagen_personaje(self, personaje_activo, cambios_usuario=""):
+    def hercules_generar_imagen_personaje(self, personaje_activo, cambios_usuario="", api_key=""):
         """Hércules genera la URL visual integrando las descripciones base y los cambios introducidos por ti."""
         info = self.lore_personajes.get(personaje_activo, {})
         seed = info.get("seed", 42)
         desc_base = info.get("descripcion", "fantasy character")
         
-        # Combinamos los rasgos del personaje con tus cambios personalizados
         prompt_base = f"dark fantasy cinematic portrait of {personaje_activo}, {desc_base}, epic lighting, detailed fantasy art, 4k"
-        if cambios_usuario.strip():
+        if cambios_usuario and cambios_usuario.strip():
             prompt_base += f", specific modification details: {cambios_usuario}"
 
         import urllib.parse
