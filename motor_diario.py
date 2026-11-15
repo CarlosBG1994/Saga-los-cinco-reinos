@@ -1,6 +1,7 @@
 import os
 import glob
 import time
+import random
 import google.generativeai as genai
 from datetime import datetime
 
@@ -81,9 +82,9 @@ class MotorDiario:
             return {"error": str(e)}
 
     def hercules_generar_imagen_personaje(self, personaje_activo, cambios_usuario="", api_key=""):
-        """Hércules genera la URL visual integrando las descripciones base y los cambios introducidos por ti."""
+        """Hércules genera la URL visual optimizada saltando los límites de caché con el modelo Flux."""
         info = self.lore_personajes.get(personaje_activo, {})
-        seed = info.get("seed", 42)
+        seed = info.get("seed", 42) + random.randint(1, 9999) # Evita conflictos de caché/límite
         desc_base = info.get("descripcion", "fantasy character")
         
         prompt_base = f"dark fantasy cinematic portrait of {personaje_activo}, {desc_base}, epic lighting, detailed fantasy art, 4k"
@@ -93,7 +94,8 @@ class MotorDiario:
         import urllib.parse
         encoded_prompt = urllib.parse.quote(prompt_base)
         
-        imagen_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=720&height=1280&seed={seed}&nologo=true"
+        # Usamos el modelo flux y un salt aleatorio para refrescar la petición al instante
+        imagen_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=720&height=1280&seed={seed}&model=flux&nologo=true"
         return imagen_url
 
     def sincronizar_hercules_lore(self, personaje_activo):
