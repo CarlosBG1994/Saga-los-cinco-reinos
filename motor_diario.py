@@ -8,7 +8,6 @@ class MotorDiario:
     def __init__(self, carpeta_capitulos="."):
         self.carpeta_capitulos = carpeta_capitulos
         self.historial_proceso = []
-        # Base de lore inicial
         self.lore_personajes = {
             "Hugo": {
                 "rol": "Protagonista",
@@ -68,7 +67,7 @@ class MotorDiario:
                 if len(nombre_limpio) > 2 and nombre_limpio not in self.lore_personajes:
                     self.lore_personajes[nombre_limpio] = {
                         "rol": "Personaje extraído por Aura",
-                        "descripcion": "Detectado mediante análisis semántico de los capítulos.",
+                        "descripcion": "Detectado mediante análisis semántico.",
                         "seed": hash(nombre_limpio) % 1000
                     }
                     nuevos_añadidos.append(nombre_limpio)
@@ -81,27 +80,22 @@ class MotorDiario:
         except Exception as e:
             return {"error": str(e)}
 
-    def hercules_generar_imagen_personaje(self, personaje_activo, api_key):
-        """Hércules genera una URL visual directa y optimizada de alta calidad para el personaje activo."""
+    def hercules_generar_imagen_personaje(self, personaje_activo, cambios_usuario=""):
+        """Hércules genera la URL visual integrando las descripciones base y los cambios introducidos por ti."""
         info = self.lore_personajes.get(personaje_activo, {})
         seed = info.get("seed", 42)
+        desc_base = info.get("descripcion", "fantasy character")
         
-        # Generamos un enlace visual cinemático y estable adaptado a estética de fantasía oscura
-        prompt_url = f"dark fantasy cinematic portrait of {personaje_activo}, epic lighting, detailed fantasy art, 4k"
+        # Combinamos los rasgos del personaje con tus cambios personalizados
+        prompt_base = f"dark fantasy cinematic portrait of {personaje_activo}, {desc_base}, epic lighting, detailed fantasy art, 4k"
+        if cambios_usuario.strip():
+            prompt_base += f", specific modification details: {cambios_usuario}"
+
         import urllib.parse
-        encoded_prompt = urllib.parse.quote(prompt_url)
+        encoded_prompt = urllib.parse.quote(prompt_base)
         
-        # Usamos un servicio de renderizado de imágenes dinámico y gratuito por URL (Pollinations / Picsum customizado)
         imagen_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=720&height=1280&seed={seed}&nologo=true"
-        
-        directriz = (
-            f"🎨 [HÉRCULES - DIRECTOR GRÁFICO RENDERIZADO]\n"
-            f"• Personaje en escena: {personaje_activo} ({info.get('rol', 'Secundario')})\n"
-            f"• Rasgos clave: {info.get('descripcion', 'Personaje de la saga.')}\n"
-            f"• Relación de aspecto: 9:16 (Vertical / TikTok)\n"
-            f"• Estado: Arte generado y sincronizado con éxito."
-        )
-        return imagen_url, directriz
+        return imagen_url
 
     def sincronizar_hercules_lore(self, personaje_activo):
         info = self.lore_personajes.get(personaje_activo, {"descripcion": "Personaje de Los Cinco Reinos."})
