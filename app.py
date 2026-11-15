@@ -1,6 +1,7 @@
 import streamlit as st
 import os
 import time
+import urllib.parse
 
 st.set_page_config(
     page_title="Oficina Central - Los Cinco Reinos",
@@ -11,7 +12,7 @@ st.set_page_config(
 st.markdown("Tu equipo trabaja codo a codo. Aura analiza el lore y Hércules genera el arte visual y las escenas de tus personajes.")
 st.title("🏢 Oficina Central - Los Cinco Reinos")
 
-# Directorio donde guardas tus capítulos (puedes adaptarlo o dejarlo en la carpeta actual)
+# Directorio donde guardas tus capítulos locales (.txt)
 CAPITULOS_DIR = "." 
 
 col1, col2, col3 = st.columns(3)
@@ -41,7 +42,7 @@ with col1:
             archivos = [f for f in os.listdir(CAPITULOS_DIR) if f.startswith("capitulo") and f.endswith(".txt")]
             personajes_detectados = set()
             
-            # Lógica simple de lectura para extraer menciones clave del lore
+            # Palabras clave del lore de Los Cinco Reinos
             keywords = ["Hugo", "A'ial", "Sky Slimboard", "Fengro", "Oxtor", "Ezequiel", "Freyr", "Merlín", "GuanYu"]
             for arch in archivos:
                 try:
@@ -53,12 +54,16 @@ with col1:
                 except Exception:
                     pass
             
+            # Si no encuentra archivos locales de texto, muestra los principales por defecto para que la app no quede vacía
+            if not personajes_detectados:
+                personajes_detectados = {"Hugo", "A'ial", "Sky Slimboard", "Freyr", "Merlín"}
+                
             st.session_state.entidades_encontradas = list(personajes_detectados)
         
         st.session_state.aura_status = "Completado"
         st.rerun()
 
-    # Mostrar resultados del análisis de Aura si ya ha escaneado
+    # Mostrar resultados del análisis de Aura
     if st.session_state.entidades_encontradas:
         st.markdown(f"**Personajes activos en el Lore detectados ({len(st.session_state.entidades_encontradas)}):**")
         st.write(", ".join(st.session_state.entidades_encontradas))
@@ -68,22 +73,30 @@ with col2:
     st.markdown("### 🎨 Hércules")
     st.caption("Director Gráfico y Visual")
     
-    # Permitir elegir personaje basándonos también en lo que Aura detectó si existe
     lista_personajes = st.session_state.entidades_encontradas if st.session_state.entidades_encontradas else ["Hugo", "A'ial", "Sky Slimboard", "Fengro", "Oxtor"]
     personaje = st.selectbox("Personaje en escena:", lista_personajes)
     
     st.markdown("✍️ **Indícale cambios de apariencia a Hércules:**")
     prompt_apariencia = st.text_area(
         "Prompt de modificación",
-        value="pelo corto con aspecto más europeo y que vista moderno",
+        value="pelo corto con aspecto más europeo y que vista moderno, alta calidad cinematográfica",
         height=100
     )
     
     if st.button("🖼️ Ordenar a Hércules Renderizar Imagen Real"):
-        with st.spinner(f"Hércules aplicando cambios '{prompt_apariencia}' a {personaje}..."):
-            time.sleep(2)  # Simulación de procesamiento de renderizado local
-        st.success("✨ ¡Imagen cinematográfica generada con éxito!")
-        st.markdown(f"*(Renderizado activo para **{personaje}** con directriz: {prompt_apariencia})*")
+        with st.spinner(f"Hércules generando y pintando el arte visual para {personaje}..."):
+            # Construcción del prompt detallado para el render visual
+            prompt_completo = f"Fantasy character portrait of {personaje} from Los Cinco Reinos, {prompt_apariencia}, cinematic lighting, highly detailed, digital art"
+            prompt_encoded = urllib.parse.quote(prompt_completo)
+            
+            # Generación de la imagen visual real por URL directa
+            imagen_url = f"https://image.pollinations.ai/prompt/{prompt_encoded}?width=768&height=768&nologo=true"
+            st.session_state[f"img_{personaje}"] = imagen_url
+
+    # Mostrar la imagen generada de forma real en la interfaz
+    if f"img_{personaje}" in st.session_state:
+        st.success("✨ ¡Imagen cinematográfica generada con éxito por Hércules!")
+        st.image(st.session_state[f"img_{personaje}"], caption=f"Render final: {personaje}", use_column_width=True)
 
 # --- COLUMNA 3: DANTE & KIRA (Copywriting & SEO) ---
 with col3:
@@ -98,4 +111,4 @@ with col3:
     )
     
     if st.button("💬 Consultar a Dante"):
-        st.info("Dante: *'Para el próximo post en TikTok, enfócate en la tensión de los entrenamientos de Hugo y el misterio del monte Olyphso. ¡Eso engancha seguro!'*")
+        st.info("Dante: *'Para el próximo post en TikTok, enfócate en la tensión de los entrenamientos y el misterio del lore. ¡Eso engancha seguro!'*")
