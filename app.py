@@ -2,7 +2,6 @@ import streamlit as st
 import os
 import time
 import urllib.parse
-import requests
 
 st.set_page_config(
     page_title="Oficina Central - Los Cinco Reinos",
@@ -13,6 +12,7 @@ st.set_page_config(
 st.markdown("Tu equipo trabaja codo a codo. Aura analiza el lore y Hércules genera el arte visual y las escenas de tus personajes.")
 st.title("🏢 Oficina Central - Los Cinco Reinos")
 
+# Directorio donde guardas tus capítulos locales (.txt)
 CAPITULOS_DIR = "." 
 
 col1, col2, col3 = st.columns(3)
@@ -68,7 +68,6 @@ with col2:
     lista_personajes = st.session_state.entidades_encontradas if st.session_state.entidades_encontradas else ["Hugo", "A'ial", "Sky Slimboard", "Freyr", "Merlín"]
     personaje = st.selectbox("Personaje en escena:", lista_personajes)
     
-    # Selector manual de género para evitar que la IA interprete mal frases sueltas
     genero = st.radio("Género del personaje:", ["Mujer", "Hombre"], horizontal=True, key=f"gen_{personaje}")
     
     st.markdown("✍️ **Detalles o modificaciones para Hércules:**")
@@ -80,38 +79,27 @@ with col2:
     )
     
     if st.button("🖼️ Ordenar a Hércules Renderizar Imagen Real"):
-        with st.spinner(f"Hércules procesando y generando el diseño para {personaje}..."):
-            # Forzar explícitamente el género en inglés para que la IA no falle jamás
+        with st.spinner(f"Hércules generando el diseño visual para {personaje}..."):
+            # Forzamos explícitamente el género en inglés para blindar el resultado
             genero_str = "female woman" if genero == "Mujer" else "male man"
             prompt_completo = f"Fantasy character portrait of {personaje}, {genero_str}, {prompt_apariencia}, cinematic lighting, highly detailed, digital art"
             
             prompt_encoded = urllib.parse.quote(prompt_completo)
-            # Usamos parámetros para limpiar la imagen
             imagen_url = f"https://image.pollinations.ai/prompt/{prompt_encoded}?width=800&height=1000&nologo=true&private=true"
             
-            try:
-                # Descargamos los bytes reales de la imagen para asegurar el botón de descarga en Windows
-                response = requests.get(imagen_url, timeout=15)
-                if response.status_code == 200:
-                    st.session_state[f"img_bytes_{personaje}"] = response.content
-                    st.session_state[f"img_url_{personaje}"] = imagen_url
-                else:
-                    st.error("Error al conectar con el motor de renderizado.")
-            except Exception as e:
-                st.error(f"Fallo de red: {e}")
+            st.session_state[f"img_url_{personaje}"] = imagen_url
+            st.success("✨ ¡Imagen generada con éxito!")
 
-    # Mostrar la imagen y el botón de descarga directa
+    # Mostrar la imagen directamente y el botón de acceso/descarga
     if f"img_url_{personaje}" in st.session_state:
-        st.success("✨ ¡Imagen generada con éxito!")
-        st.image(st.session_state[f"img_url_{personaje}"], caption=f"Render final: {personaje} ({genero})", use_column_width=True)
+        current_url = st.session_state[f"img_url_{personaje}"]
+        st.image(current_url, caption=f"Render final: {personaje} ({genero})", use_column_width=True)
         
-        # Botón de descarga directa a tu PC
-        st.download_button(
-            label="📥 Descargar Imagen a tu PC",
-            data=st.session_state[f"img_bytes_{personaje}"],
-            file_name=f"{personaje}_{genero.lower()}.png",
-            mime="image/png",
-            key=f"dl_{personaje}"
+        st.markdown(
+            f"""<div style="text-align: center; margin-top: 10px;">
+                <a href="{current_url}" target="_blank" style="background-color: #ff4b4b; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">📥 Abrir / Guardar Imagen en Grande</a>
+            </div>""",
+            unsafe_allow_html=True
         )
 
 # --- COLUMNA 3: DANTE & KIRA (Copywriting & SEO) ---
