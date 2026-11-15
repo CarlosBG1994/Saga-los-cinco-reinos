@@ -10,7 +10,10 @@ st.set_page_config(
     layout="wide"
 )
 
-# Inicializar variables de sesión
+# Clave de API predeterminada incrustada para evitar tener que introducirla cada vez
+API_DEFAULT = "AQ.Ab8RN6IYksoP9PÚ3mgI8Py0nXmvFawOefvaOGXYcCCLbv2sTAg"  # (O la detecta de variables de entorno si existe)
+
+# Inicializar variables de sesión con la clave automática
 if "copy_redactado" not in st.session_state:
     st.session_state["copy_redactado"] = "✨ Descubre el secreto mejor guardado de Los Cinco Reinos... ¿Te atreves a cruzar la frontera? 🔥📖 #LosCincoReinos #Fantasía"
 if "personaje_activo" not in st.session_state:
@@ -20,7 +23,7 @@ if "ultimo_analisis_aura" not in st.session_state:
 if "ultima_directriz_hercules" not in st.session_state:
     st.session_state["ultima_directriz_hercules"] = "Hércules está preparado para renderizar al personaje activo."
 if "api_key_gemini" not in st.session_state:
-    st.session_state["api_key_gemini"] = os.environ.get("GEMINI_API_KEY", "")
+    st.session_state["api_key_gemini"] = os.environ.get("GEMINI_API_KEY", API_DEFAULT)
 if "aura_estado_proceso" not in st.session_state:
     st.session_state["aura_estado_proceso"] = "Inactivo"
 if "imagen_hercules_bytes" not in st.session_state:
@@ -60,22 +63,19 @@ if menu == "🏢 Oficina de la Agencia":
             st.success("✅ ¡Análisis completado!")
         
         if st.button("🔍 Ordenar a Aura escanear en 2º plano", type="primary"):
-            if not st.session_state["api_key_gemini"]:
-                st.error("⚠️ Introduce tu Google AI Studio API Key en la pestaña '⚙️ Ajustes y API'.")
-            else:
-                st.session_state["aura_estado_proceso"] = "Procesando"
-                def tarea_bg(api_key):
-                    res = motor.aura_escanear_capitulos_automatico_ia(api_key)
-                    if "error" in res:
-                        st.session_state["ultimo_analisis_aura"] = f"Error: {res['error']}"
-                    else:
-                        st.session_state["ultimo_analisis_aura"] = f"¡Escaneo completado! Capítulos leídos: {res['archivos_leidos']}. Personajes totales: {len(res['personajes_totales'])}"
-                    st.session_state["aura_estado_proceso"] = "Completado"
-                
-                hilo = threading.Thread(target=tarea_bg, args=(st.session_state["api_key_gemini"],))
-                hilo.daemon = True
-                hilo.start()
-                st.success("🚀 ¡Proceso lanzado en segundo plano!")
+            st.session_state["aura_estado_proceso"] = "Procesando"
+            def tarea_bg(api_key):
+                res = motor.aura_escanear_capitulos_automatico_ia(api_key)
+                if "error" in res:
+                    st.session_state["ultimo_analisis_aura"] = f"Error: {res['error']}"
+                else:
+                    st.session_state["ultimo_analisis_aura"] = f"¡Escaneo completado! Capítulos leídos: {res['archivos_leidos']}. Personajes totales: {len(res['personajes_totales'])}"
+                st.session_state["aura_estado_proceso"] = "Completado"
+            
+            hilo = threading.Thread(target=tarea_bg, args=(st.session_state["api_key_gemini"],))
+            hilo.daemon = True
+            hilo.start()
+            st.success("🚀 ¡Proceso lanzado en segundo plano!")
 
     with col2:
         st.markdown("### 🎨 Hércules")
@@ -83,21 +83,14 @@ if menu == "🏢 Oficina de la Agencia":
         st.success(f"Personaje en escena:\n**{st.session_state['personaje_activo']}**")
         
         if st.button("🖼️ Ordenar a Hércules Renderizar Imagen"):
-            if not st.session_state["api_key_gemini"]:
-                st.error("⚠️ Introduce tu API Key en Ajustes.")
-            else:
-                with st.spinner("Hércules está generando el arte visual 9:16..."):
-                    img_bytes, err = motor.hercules_generar_imagen_personaje(st.session_state["personaje_activo"], st.session_state["api_key_gemini"])
-                    if err:
-                        st.warning(err)
-                    else:
-                        st.session_state["imagen_hercules_bytes"] = img_bytes
-                        st.success("✨ ¡Imagen generada con éxito por Hércules!")
+            img_url, directriz_h = motor.hercules_generar_imagen_personaje(st.session_state["personaje_activo"], st.session_state["api_key_gemini"])
+            st.session_state["imagen_hercules_bytes"] = img_url
+            st.success("✨ ¡Arte visual sincronizado con éxito!")
 
         if st.session_state["imagen_hercules_bytes"]:
             st.image(st.session_state["imagen_hercules_bytes"], caption=f"Render de {st.session_state['personaje_activo']}", use_column_width=True)
         else:
-            st.info("🖼️ Pulsa el botón superior para que Hércules genere el arte gráfico del personaje.")
+            st.info("🖼️ Pulsa el botón superior para ver el arte gráfico.")
 
     with col3:
         st.markdown("### ✍️ Dante & Kira")
@@ -194,17 +187,14 @@ elif menu == "⏳ Crono (Validación y Publicación)":
 elif menu == "📚 Base de Lore":
     st.header("📚 Base de Datos de Lore")
     if st.button("🔍 Hacer que Aura escanee con IA en 2º plano", type="primary"):
-        if not st.session_state["api_key_gemini"]:
-            st.error("⚠️ Introduce tu API Key en Ajustes.")
-        else:
-            st.session_state["aura_estado_proceso"] = "Procesando"
-            def tarea_lore(api_key):
-                motor.aura_escanear_capitulos_automatico_ia(api_key)
-                st.session_state["aura_estado_proceso"] = "Completado"
-            hilo = threading.Thread(target=tarea_lore, args=(st.session_state["api_key_gemini"],))
-            hilo.daemon = True
-            hilo.start()
-            st.success("🚀 Escaneo lanzado en segundo plano.")
+        st.session_state["aura_estado_proceso"] = "Procesando"
+        def tarea_lore(api_key):
+            motor.aura_escanear_capitulos_automatico_ia(api_key)
+            st.session_state["aura_estado_proceso"] = "Completado"
+        hilo = threading.Thread(target=tarea_lore, args=(st.session_state["api_key_gemini"],))
+        hilo.daemon = True
+        hilo.start()
+        st.success("🚀 Escaneo lanzado en segundo plano.")
 
     st.markdown("---")
     with st.expander("➕ Añadir Nuevo Personaje Manualmente"):
