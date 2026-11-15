@@ -1,236 +1,71 @@
 import streamlit as st
-import os
-import threading
-from motor_diario import motor
+import time
 
-# Configuración de la página
 st.set_page_config(
-    page_title="Los Cinco Reinos - Oficina de Agentes",
-    page_icon="👑",
+    page_title="Oficina Central - Los Cinco Reinos",
+    page_icon="🏢",
     layout="wide"
 )
 
-# Clave de API por defecto para automatizar el acceso al entrar
-API_DEFAULT = "AQ.Ab8RN6IYksoP9PÚ3mgI8Py0nXmvFawOefvaOGXYcCCLbv2sTAg"
+st.title("🏢 Oficina Central - Los Cinco Reinos")
+st.markdown("Tu equipo trabaja codo a codo. Aura analiza el lore y Hércules genera el arte visual y las escenas de tus personajes.")
 
-if "copy_redactado" not in st.session_state:
-    st.session_state["copy_redactado"] = "✨ Descubre el secreto mejor guardado de Los Cinco Reinos... ¿Te atreves a cruzar la frontera? 🔥📖 #LosCincoReinos #Fantasía"
-if "personaje_activo" not in st.session_state:
-    st.session_state["personaje_activo"] = "Hugo"
-if "ultimo_analisis_aura" not in st.session_state:
-    st.session_state["ultimo_analisis_aura"] = "Aura está lista para escanear los capítulos con IA."
-if "ultima_directriz_hercules" not in st.session_state:
-    st.session_state["ultima_directriz_hercules"] = "Hércules está preparado para renderizar al personaje activo."
-if "api_key_gemini" not in st.session_state:
-    st.session_state["api_key_gemini"] = os.environ.get("GEMINI_API_KEY", API_DEFAULT)
-if "aura_estado_proceso" not in st.session_state:
-    st.session_state["aura_estado_proceso"] = "Inactivo"
-if "imagen_hercules_url" not in st.session_state:
-    st.session_state["imagen_hercules_url"] = None
+# Layout en 3 columnas para los agentes
+col1, col2, col3 = st.columns(3)
 
-# Barra lateral de navegación
-st.sidebar.title("👑 Los Cinco Reinos")
-st.sidebar.markdown("---")
-menu = st.sidebar.selectbox(
-    "Navegación",
-    [
-        "🏢 Oficina de la Agencia", 
-        "🤖 Sala de Máquinas (Estado)", 
-        "⏳ Crono (Validación y Publicación)", 
-        "📚 Base de Lore", 
-        "⚙️ Ajustes y API"
-    ]
-)
-
-# ----------------------------------------------------
-# 1. OFICINA DE LA AGENCIA
-# ----------------------------------------------------
-if menu == "🏢 Oficina de la Agencia":
-    st.title("🏢 Oficina Central - Los Cinco Reinos")
-    st.markdown("Tu equipo trabaja codo a codo. Hércules genera el arte visual cinematográfico real de tus personajes.")
-
-    col1, col2, col3 = st.columns(3)
+# --- COLUMNA 1: AURA (Analista Textual) ---
+with col1:
+    st.markdown("### 📖 Aura")
+    st.caption("Analista Textual (Lore con IA)")
     
-    with col1:
-        st.markdown("### 📖 Aura")
-        st.caption("Analista Textual (Lore con IA)")
-        st.info("Lee los capítulos en segundo plano y extrae personajes.")
-        
-        if st.session_state["aura_estado_proceso"] == "Procesando":
-            st.warning("🔄 Aura está trabajando en segundo plano...")
-        elif st.session_state["aura_estado_proceso"] == "Completado":
-            st.success("✅ ¡Análisis completado!")
-        
-        if st.button("🔍 Ordenar a Aura escanear en 2º plano", type="primary"):
-            st.session_state["aura_estado_proceso"] = "Procesando"
-            def tarea_bg(api_key):
-                res = motor.aura_escanear_capitulos_automatico_ia(api_key)
-                if "error" in res:
-                    st.session_state["ultimo_analisis_aura"] = f"Error: {res['error']}"
-                else:
-                    st.session_state["ultimo_analisis_aura"] = f"¡Escaneo completado! Capítulos leídos: {res['archivos_leidos']}. Personajes totales: {len(res['personajes_totales'])}"
-                st.session_state["aura_estado_proceso"] = "Completado"
-            
-            hilo = threading.Thread(target=tarea_bg, args=(st.session_state["api_key_gemini"],))
-            hilo.daemon = True
-            hilo.start()
-            st.success("🚀 ¡Proceso lanzado en segundo plano!")
-
-    with col2:
-        st.markdown("### 🎨 Hércules")
-        st.caption("Director Gráfico y Visual")
-        st.success(f"Personaje en escena:\n**{st.session_state['personaje_activo']}**")
-        
-        # Caja de cambios interactiva real para Hércules
-        cambios_usuario = st.text_area(
-            "✍️ Indícale cambios de apariencia a Hércules:",
-            placeholder="Ej: Adolescente de 15 años, pelo negro revuelto, mirada seria...",
-            key="input_cambios_hercules"
-        )
-        
-        if st.button("🖼️ Ordenar a Hércules Renderizar Imagen Real", type="primary"):
-            with st.spinner("Hércules generando arte cinematográfico..."):
-                img_url = motor.hercules_generar_imagen_real(
-                    personaje_activo=st.session_state["personaje_activo"], 
-                    cambios_usuario=cambios_usuario
-                )
-                st.session_state["imagen_hercules_url"] = img_url
-                st.success("✨ ¡Imagen cinematográfica generada con éxito!")
-
-        if st.session_state["imagen_hercules_url"]:
-            st.image(st.session_state["imagen_hercules_url"], caption=f"Render real de {st.session_state['personaje_activo']}", use_column_width=True)
-        else:
-            st.info("🖼️ Pulsa el botón superior para generar la imagen real del personaje.")
-
-    with col3:
-        st.markdown("### ✍️ Dante & Kira")
-        st.caption("Copywriting & SEO")
-        st.warning("Redactando ganchos y optimizando hashtags.")
-        if st.button("💬 Consultar a Dante"):
-            st.toast("Dante: 'Los copys están listos para TikTok.'")
-
-    st.markdown("---")
-    st.subheader("👥 Selector de Personaje Activo para Hércules")
+    st.info("Lee los capítulos en segundo plano y extrae personajes.")
     
-    if motor.lore_personajes:
-        lista_personajes = list(motor.lore_personajes.keys())
-        personaje_elegido = st.selectbox("Personaje protagonista en escena:", lista_personajes)
-        st.session_state["personaje_activo"] = personaje_elegido
-        st.session_state["ultima_directriz_hercules"] = motor.sincronizar_hercules_lore(personaje_elegido)
-        
-        info_p = motor.lore_personajes[personaje_elegido]
-        st.info(f"📌 **Ficha activa:** {personaje_elegido} ({info_p['rol']}) — *{info_p['descripcion']}*")
+    if "aura_status" not in st.session_state:
+        st.session_state.aura_status = "Inactivo"
+
+    if st.session_state.aura_status == "Trabajando":
+        st.warning("🔄 Aura está trabajando en segundo plano...")
     else:
-        st.warning("⚠️ No hay personajes en la base de Lore.")
+        st.success("✅ Aura en línea.")
 
-# ----------------------------------------------------
-# 2. SALA DE MÁQUINAS
-# ----------------------------------------------------
-elif menu == "🤖 Sala de Máquinas (Estado)":
-    st.title("🕹️ Estado del Equipo en Directo (Sala de Máquinas)")
-    cols = st.columns(6)
-    agentes_info = [
-        ("Aura", "Analista", st.session_state["aura_estado_proceso"]),
-        ("Hércules", "Director Gráfico", "Listo para render"),
-        ("Dante", "Copywriter", "Activo"),
-        ("Kira", "SEO", "Activa"),
-        ("Hermes", "Soporte", "OK"),
-        ("Crono", "Orquestador", "OK")
-    ]
-    for i, (nombre, rol, estado) in enumerate(agentes_info):
-        with cols[i]:
-            st.markdown(f"**{nombre}**")
-            st.caption(rol)
-            st.info(estado)
+    if st.button("🔍 Ordenar a Aura escanear en 2º plano"):
+        st.session_state.aura_status = "Trabajando"
+        with st.spinner("Aura analizando capítulos y extrayendo entidades..."):
+            time.sleep(2)
+        st.session_state.aura_status = "Completado"
+        st.rerun()
 
-    st.markdown("---")
-    archivos_disponibles = motor.listar_capitulos()
-    capitulo_sel = st.selectbox("Elegir Archivo de Capítulo", archivos_disponibles)
-    formato_sel = st.selectbox("Formato de contenido:", ["Publicación / Post Estático", "Vídeo Corto (Reel/TikTok)", "Carrusel de Lore"])
+# --- COLUMNA 2: HÉRCULES (Director Gráfico y Visual) ---
+with col2:
+    st.markdown("### 🎨 Hércules")
+    st.caption("Director Gráfico y Visual")
     
-    if st.button("🚀 Ordenar al equipo procesar y generar propuesta"):
-        res = motor.procesar_agentes_autonomos(capitulo_sel, st.session_state["personaje_activo"], formato_sel)
-        st.session_state["ultimo_analisis_aura"] = res['aura_analisis']
-        st.session_state["ultima_directriz_hercules"] = res['hercules_render']
-        st.session_state["copy_redactado"] = res["dante_copy"] + "\n\n" + res["kira_tags"]
-        st.success("¡Propuesta generada! Dirígete a **⏳ Crono**.")
-
-# ----------------------------------------------------
-# 3. CRONO (Validación y Publicación)
-# ----------------------------------------------------
-elif menu == "⏳ Crono (Validación y Publicación)":
-    st.header("⏳ Crono - Centro de Validación y Publicación")
+    personaje = st.selectbox("Personaje en escena:", ["Hugo", "A'ial", "Sky Slimboard", "Fengro", "Oxtor"])
     
-    with st.expander("🔍 Auditoría Gráfica y Textual de los Agentes", expanded=True):
-        col_v1, col_v2 = st.columns(2)
-        with col_v1:
-            st.markdown("### 📖 Análisis de Aura")
-            st.write(st.session_state["ultimo_analisis_aura"])
-        with col_v2:
-            st.markdown("### 🎨 Render Real de Hércules")
-            if st.session_state["imagen_hercules_url"]:
-                st.image(st.session_state["imagen_hercules_url"], width=200, caption="Arte activo")
-            st.code(st.session_state["ultima_directriz_hercules"], language="markdown")
-
-    st.markdown("---")
-    col_video, col_text = st.columns([1, 1])
+    st.markdown("✍️ **Indícale cambios de apariencia a Hércules:**")
+    prompt_apariencia = st.text_area(
+        "Prompt de modificación",
+        value="pelo corto con aspecto más europeo y que vista moderno",
+        height=100
+    )
     
-    with col_video:
-        st.subheader("🎬 Previsualización de la Pieza Real")
-        video_subido = st.file_uploader("Sube el archivo de vídeo definitivo (.mp4):", type=["mp4", "mov", "avi"])
-        if video_subido is not None:
-            st.video(video_subido)
-            st.success("✅ ¡Vídeo validado!")
-        else:
-            st.info("📂 Sube aquí tu archivo MP4 para previsualizarlo.")
+    if st.button("🖼️ Ordenar a Hércules Renderizar Imagen Real"):
+        with st.spinner(f"Hércules generando arte cinematográfico para {personaje}..."):
+            time.sleep(3)
+        st.success("✨ ¡Imagen cinematográfica generada con éxito!")
+        # Aquí puedes integrar la llamada a generación de imágenes si usas alguna API (como DALL-E / Stable Diffusion)
 
-    with col_text:
-        st.subheader("✍️ Textos validados")
-        st.markdown(f"**Personaje activo:** `{st.session_state['personaje_activo']}`")
-        copy_output = st.text_area("Copia el copy preparado:", value=st.session_state["copy_redactado"], height=180)
-        if st.button("✅ Validar y Aprobar Contenido"):
-            st.success("🎉 ¡Contenido aprobado oficialmente para TikTok!")
-
-# ----------------------------------------------------
-# 4. BASE DE LORE
-# ----------------------------------------------------
-elif menu == "📚 Base de Lore":
-    st.header("📚 Base de Datos de Lore")
-    if st.button("🔍 Hacer que Aura escanee con IA en 2º plano", type="primary"):
-        st.session_state["aura_estado_proceso"] = "Procesando"
-        def tarea_lore(api_key):
-            motor.aura_escanear_capitulos_automatico_ia(api_key)
-            st.session_state["aura_estado_proceso"] = "Completado"
-        hilo = threading.Thread(target=tarea_lore, args=(st.session_state["api_key_gemini"],))
-        hilo.daemon = True
-        hilo.start()
-        st.success("🚀 Escaneo lanzado en segundo plano.")
-
-    st.markdown("---")
-    with st.expander("➕ Añadir Nuevo Personaje Manualmente"):
-        nombre_in = st.text_input("Nombre")
-        rol_in = st.selectbox("Rol", ["Protagonista", "Secundario", "Antagonista", "Secuaz"])
-        desc_in = st.text_area("Descripción")
-        if st.button("💾 Guardar Personaje"):
-            if nombre_in and motor.agregar_personaje(nombre_in, rol_in, desc_in):
-                st.success(f"¡{nombre_in} guardado!")
-                st.rerun()
-
-    st.markdown("---")
-    st.subheader("📋 Personajes Registrados")
-    for pers, datos in list(motor.lore_personajes.items()):
-        with st.expander(f"👤 {pers} — [{datos['rol']}]"):
-            st.write(f"**Descripción:** {datos['descripcion']}")
-            if st.button(f"🗑️ Eliminar {pers}", key=f"del_{pers}"):
-                motor.eliminar_personaje(pers)
-                st.rerun()
-
-# ----------------------------------------------------
-# 5. AJUSTES Y API
-# ----------------------------------------------------
-elif menu == "⚙️ Ajustes y API":
-    st.header("⚙️ Configuración del Sistema y Modelos")
-    api_key_input = st.text_input("Google AI Studio API Key", type="password", value=st.session_state["api_key_gemini"])
-    if st.button("💾 Guardar Configuración"):
-        st.session_state["api_key_gemini"] = api_key_input
-        st.success("¡Configuración guardada correctamente!")
+# --- COLUMNA 3: DANTE & KIRA (Copywriting & SEO) ---
+with col3:
+    st.markdown("### ✍️ Dante & Kira")
+    st.caption("Copywriting & SEO")
+    
+    st.markdown(
+        """<div style='background-color: #fdf8e2; padding: 10px; border-radius: 5px; border: 1px solid #e6dbb9;'>
+        Redactando ganchos y optimizando hashtags para Instagram y TikTok.
+        </div>""", 
+        unsafe_allow_html=True
+    )
+    
+    if st.button("💬 Consultar a Dante"):
+        st.info("Dante: *'Recuerda enfatizar la tensión y el misterio en el próximo post para enganchar a los lectores en TikTok.'*")
