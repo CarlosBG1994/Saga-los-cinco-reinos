@@ -1,21 +1,24 @@
 import os
 import glob
 import time
+import random
+import urllib.parse
 import google.generativeai as genai
 
 class MotorDiario:
     def __init__(self, carpeta_capitulos="."):
         self.carpeta_capitulos = carpeta_capitulos
+        self.historial_proceso = []
         self.lore_personajes = {
             "Hugo": {
                 "rol": "Protagonista",
-                "descripcion": "Joven delgado, alto, de pelo negro y ojos azul celeste.",
-                "color_tema": "#FFD700" # Dorado / Amarillo
+                "descripcion": "Joven de 15 años, pelo negro revuelto, ojos azul celeste, aire decidido, túnica oscura de fantasía épica, iluminación cinematográfica.",
+                "seed": 101
             },
             "Esther": {
                 "rol": "Protagonista",
-                "descripcion": "Protagonista principal de la saga Los Cinco Reinos.",
-                "color_tema": "#FFC107" # Amarillo cálido
+                "descripcion": "Heroína principal de la saga Los Cinco Reinos, aspecto valiente, armadura ligera y detalles dorados.",
+                "seed": 202
             }
         }
 
@@ -36,7 +39,7 @@ class MotorDiario:
 
     def aura_escanear_capitulos_automatico_ia(self, api_key):
         if not api_key:
-            return {"error": "Se requiere una API Key válida."}
+            return {"error": "Se requiere una API Key de Google AI Studio válida en Ajustes."}
 
         genai.configure(api_key=api_key)
         modelo = genai.GenerativeModel("gemini-3.8-flash")
@@ -65,8 +68,8 @@ class MotorDiario:
                 if len(nombre_limpio) > 2 and nombre_limpio not in self.lore_personajes:
                     self.lore_personajes[nombre_limpio] = {
                         "rol": "Personaje extraído por Aura",
-                        "descripcion": "Detectado mediante análisis semántico.",
-                        "color_tema": "#FFD700"
+                        "descripcion": "Detectado mediante análisis semántico de los capítulos.",
+                        "seed": hash(nombre_limpio) % 1000
                     }
                     nuevos_añadidos.append(nombre_limpio)
 
@@ -78,56 +81,45 @@ class MotorDiario:
         except Exception as e:
             return {"error": str(e)}
 
-    def hercules_generar_avatar_svg(self, personaje_activo, cambios_usuario=""):
-        """Genera un escudo/avatar en SVG local con tonos dorados/amarillos y las modificaciones del usuario."""
+    def hercules_generar_imagen_real(self, personaje_activo, cambios_usuario=""):
+        """Hércules genera directamente una imagen cinematográfica real en alta calidad."""
         info = self.lore_personajes.get(personaje_activo, {})
-        desc = info.get("descripcion", "")
+        seed = info.get("seed", 42) + random.randint(1, 9999)
+        desc_base = info.get("descripcion", "fantasy dark epic character")
         
-        mod_texto = f" | Mod: {cambios_usuario}" if cambios_usuario.strip() else ""
+        # Prompt enfocado 100% en cine fantástico oscuro de alta calidad con tonos dorados dominantes
+        prompt_base = (
+            f"masterpiece, photorealistic cinematic dark fantasy portrait of {personaje_activo}, {desc_base}, "
+            f"dominant warm golden and amber yellow lighting, glowing mystical atmosphere, "
+            f"highly detailed digital painting, 8k resolution, professional character design"
+        )
         
-        # SVG dinámico autocontenido en tonos oscuros y dorados (amarillos)
-        svg_code = f"""
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 600" width="100%" height="100%">
-            <defs>
-                <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stop-color="#111111" />
-                    <stop offset="100%" stop-color="#2c2200" />
-                </linearGradient>
-                <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stop-color="#FFC107" />
-                    <stop offset="50%" stop-color="#FFD700" />
-                    <stop offset="100%" stop-color="#FFA000" />
-                </linearGradient>
-            </defs>
-            <rect width="400" height="600" fill="url(#bg)" rx="15"/>
-            <rect x="20" y="20" width="360" height="560" fill="none" stroke="url(#gold)" stroke-width="3" rx="10"/>
-            <!-- Símbolo / Escudo central -->
-            <circle cx="200" cy="200" r="80" fill="url(#gold)" opacity="0.15"/>
-            <circle cx="200" cy="200" r="70" fill="none" stroke="url(#gold)" stroke-width="2" stroke-dasharray="6,4"/>
-            <text x="200" y="190" fill="#FFD700" font-family="Georgia, serif" font-size="64" font-weight="bold" text-anchor="middle">👑</text>
-            <!-- Títulos y Textos -->
-            <text x="200" y="320" fill="#FFD700" font-family="Georgia, serif" font-size="26" font-weight="bold" text-anchor="middle">{personaje_activo}</text>
-            <text x="200" y="355" fill="#FFE082" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">LOS CINCO REINOS</text>
-            <line x1="60" y1="380" x2="340" y2="380" stroke="#FFD700" stroke-width="1" opacity="0.4"/>
-            <!-- Descripción y Modificaciones -->
-            <foreignObject x="40" y="405" width="320" height="150">
-                <div xmlns="http://www.w3.org/1999/xhtml" style="color: #FFF8E1; font-family: Arial, sans-serif; font-size: 13px; text-align: center; line-height: 1.4;">
-                    <p><b>Rol:</b> {info.get('rol', '')}</p>
-                    <p>{desc}</p>
-                    <p style="color: #FFD700; font-style: italic;">{mod_texto}</p>
-                </div>
-            </foreignObject>
-        </svg>
-        """
-        return svg_code
+        if cambios_usuario and cambios_usuario.strip():
+            prompt_base += f", custom modifications requested by author: {cambios_usuario}"
+
+        encoded_prompt = urllib.parse.quote(prompt_base)
+        
+        # Generación de imagen fotorrealista profesional adaptada a formato vertical (9:16)
+        imagen_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=720&height=1280&seed={seed}&model=flux&nologo=true"
+        return imagen_url
 
     def sincronizar_hercules_lore(self, personaje_activo):
         info = self.lore_personajes.get(personaje_activo, {"descripcion": "Personaje de Los Cinco Reinos."})
-        return f"🎨 [HÉRCULES] Render activo para {personaje_activo} ({info.get('rol')}) en gama dorada/amarilla."
+        directriz = (
+            f"🎨 [HÉRCULES - DIRECTOR GRÁFICO]\n"
+            f"• Personaje en escena: {personaje_activo} ({info.get('rol', 'Secundario')})\n"
+            f"• Rasgos base: {info['descripcion']}\n"
+            f"• Estética: Fantasía épica oscura, iluminación cinematográfica dorada."
+        )
+        return directriz
 
     def agregar_personaje(self, nombre, rol, descripcion):
         if nombre and nombre not in self.lore_personajes:
-            self.lore_personajes[nombre] = {"rol": rol, "descripcion": descripcion, "color_tema": "#FFD700"}
+            self.lore_personajes[nombre] = {
+                "rol": rol, 
+                "descripcion": descripcion,
+                "seed": hash(nombre) % 1000
+            }
             return True
         return False
 
@@ -138,12 +130,16 @@ class MotorDiario:
         return False
 
     def procesar_agentes_autonomos(self, capitulo_sel, personaje_sel, formato_sel):
-        return {
+        texto = self.leer_capitulo(capitulo_sel)
+        directriz_hercules = self.sincronizar_hercules_lore(personaje_sel)
+        
+        resultado = {
             "estado": "Validado",
-            "aura_analisis": f"Análisis de `{capitulo_sel}` completado para {personaje_sel}.",
-            "hercules_render": self.sincronizar_hercules_lore(personaje_sel),
-            "dante_copy": f"✨ [LOS CINCO REINOS] Descubre los secretos de {personaje_sel}. 🔥📖 #{personaje_sel} #FantasíaÉpica #BookTok",
-            "kira_tags": "#LosCincoReinos #FantasíaOscura #WritersOfTikTok #Bookstagram"
+            "aura_analisis": f"Análisis de `{capitulo_sel}` finalizado. Cruzado con el perfil de {personaje_sel}.",
+            "hercules_render": directriz_hercules,
+            "dante_copy": f"✨ [LOS CINCO REINOS] La frontera se quema... ¿Qué esconde realmente {personaje_sel}? Descúbrelo en el nuevo capítulo. 🔥📖 #{personaje_sel} #FantasíaÉpica #BookTok",
+            "kira_tags": "#LosCincoReinos #FantasíaOscura #Lectores #WritersOfTikTok #Bookstagram"
         }
+        return resultado
 
 motor = MotorDiario()
