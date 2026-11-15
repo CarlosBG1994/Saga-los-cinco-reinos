@@ -10,10 +10,8 @@ st.set_page_config(
     layout="wide"
 )
 
-# Clave de API predeterminada incrustada para evitar tener que introducirla cada vez
-API_DEFAULT = "AQ.Ab8RN6IYksoP9PÚ3mgI8Py0nXmvFawOefvaOGXYcCCLbv2sTAg"  # (O la detecta de variables de entorno si existe)
+API_DEFAULT = "AQ.Ab8RN6IYksoP9PÚ3mgI8Py0nXmvFawOefvaOGXYcCCLbv2sTAg"
 
-# Inicializar variables de sesión con la clave automática
 if "copy_redactado" not in st.session_state:
     st.session_state["copy_redactado"] = "✨ Descubre el secreto mejor guardado de Los Cinco Reinos... ¿Te atreves a cruzar la frontera? 🔥📖 #LosCincoReinos #Fantasía"
 if "personaje_activo" not in st.session_state:
@@ -82,10 +80,21 @@ if menu == "🏢 Oficina de la Agencia":
         st.caption("Director Gráfico y Vídeo")
         st.success(f"Personaje en escena:\n**{st.session_state['personaje_activo']}**")
         
-        if st.button("🖼️ Ordenar a Hércules Renderizar Imagen"):
-            img_url, directriz_h = motor.hercules_generar_imagen_personaje(st.session_state["personaje_activo"], st.session_state["api_key_gemini"])
+        # Caja de texto segura para indicar modificaciones a Hércules
+        cambios_usuario = st.text_area(
+            "✍️ Indícale cambios o detalles a Hércules:",
+            placeholder="Ej: Mirada seria, cicatriz en la mejilla, armadura...",
+            key="input_cambios_hercules"
+        )
+        
+        if st.button("🖼️ Ordenar a Hércules Renderizar con Cambios"):
+            img_url = motor.hercules_generar_imagen_personaje(
+                personaje_activo=st.session_state["personaje_activo"], 
+                cambios_usuario=cambios_usuario, 
+                api_key=st.session_state["api_key_gemini"]
+            )
             st.session_state["imagen_hercules_bytes"] = img_url
-            st.success("✨ ¡Arte visual sincronizado con éxito!")
+            st.success("✨ ¡Arte visual actualizado con tus indicaciones!")
 
         if st.session_state["imagen_hercules_bytes"]:
             st.image(st.session_state["imagen_hercules_bytes"], caption=f"Render de {st.session_state['personaje_activo']}", use_column_width=True)
